@@ -14,8 +14,12 @@ func TestSendEmail(t *testing.T) {
 	resultChannel := make(chan string)
 
 	mailHandler := func(origin net.Addr, from string, to []string, data []byte) {
-		message, _ := mail.ReadMessage(bytes.NewReader(data))
-		log.Printf("Received mail from %s for %s: %s", from, to[0], message) // TODO Why is message nil?
+		message, err := mail.ReadMessage(bytes.NewReader(data))
+		if err != nil {
+			log.Fatalf("ERROR: Received mail from %s for %s: %v", from, to[0], err)
+		} else {
+			log.Printf("Received mail from %s for %s: %v", from, to[0], message)
+		}
 		resultChannel <- to[0]
 	}
 
@@ -27,7 +31,7 @@ func TestSendEmail(t *testing.T) {
 	}()
 
 	time.Sleep(2 * time.Second) // TODO Better synchronisation
-	SendMail("test@server.local", "Test Server", "Here is your mail!")
+	SendMail("test@server.local", "Test Server", "Subject: Here is your mail!\n\nContent of mail.")
 
 	result := <-resultChannel
 	if result != "Test Server" {

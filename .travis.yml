@@ -18,3 +18,7 @@ language: go
 
 go:
   - 1.6
+
+scripts:
+  - go test -timeout 30s -v ./...
+  - ./enforce_gofmt.sh

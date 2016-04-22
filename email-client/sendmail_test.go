@@ -3,5 +3,5 @@ package emailclient
 import "testing"
 
 func TestSendEmail(*testing.T) {
-	SendMail("A", "B")
+	SendMail("johannes@ebke.org", "Testmail")
 }

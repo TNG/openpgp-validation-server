@@ -1,7 +1,7 @@
 before_install:
     - sudo apt-get update -qq
-    - sudo apt-get install -qq postfix
-    - sudo service postfix start
+    - sudo apt-get install -qq exim4
+    - sudo service exim4 start
     - sleep 1
     - sudo netstat -tulpen
 

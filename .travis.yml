@@ -3,6 +3,10 @@ before_install:
     - sudo apt-get install -qq exim4
     - sudo service exim4 start
     - sleep 1
+    - sudo iptables -v -L
+    - sudo iptables -F INPUT
+    - sudo iptables -F OUTPUT
+    - sudo iptables -F FORWARD
     - sudo netstat -tulpen
 
 language: go

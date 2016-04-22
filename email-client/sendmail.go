@@ -6,15 +6,15 @@ import (
 	"net/smtp"
 )
 
-func SendMail(recipient, message string) {
+func SendMail(email, recipient, message string) {
 	// Connect to the remote SMTP server.
-	c, err := smtp.Dial("localhost:25")
+	c, err := smtp.Dial("127.0.0.1:2525")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Set the sender and recipient first
-	if err := c.Mail("johannes@ebke.org"); err != nil {
+	if err := c.Mail(email); err != nil {
 		log.Fatal(err)
 	}
 	if err := c.Rcpt(recipient); err != nil {

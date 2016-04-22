@@ -26,8 +26,8 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) {
 
 func TestReceiveMail(t *testing.T) {
 	received = ""
-	expected := "johannes@ebke.org -> johannes@ebke.org"
-	emailclient.SendMail("johannes@ebke.org", "Testmail")
+	expected := "ray@tomlinson.net -> ray.tomlinson@mail.org"
+	emailclient.SendMail("ray@tomlinson.net", "ray.tomlinson@mail.org", "QWERTYIOP")
 	if received != expected {
 		t.Error("Expected:", expected, " Received:", received)
 	}

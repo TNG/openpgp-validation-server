@@ -3,3 +3,6 @@ OpenPGP Email Validation in Go - Experimental Server
 
 Reference:
 https://wiki.gnupg.org/OpenPGPEmailSummits-EmailValidation
+
+Reference for Go review comments:
+https://github.com/golang/go/wiki/CodeReviewComments

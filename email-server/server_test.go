@@ -3,11 +3,13 @@ package emailserver
 import (
 	"bytes"
 	"fmt"
-	"github.com/TNG/gpg-validation-server/email-client"
+	"log"
 	"net"
 	"net/mail"
 	"testing"
 	"time"
+
+	"github.com/TNG/gpg-validation-server/email-client"
 )
 
 var received string
@@ -19,14 +21,17 @@ func init() {
 }
 
 func mailHandler(origin net.Addr, from string, to []string, data []byte) {
-	mail.ReadMessage(bytes.NewReader(data))
+	_, err := mail.ReadMessage(bytes.NewReader(data))
+	if err != nil {
+		log.Fatal(err)
+	}
 	received = fmt.Sprintf("%s -> %s", from, to[0])
 }
 
 func TestReceiveMail(t *testing.T) {
 	received = ""
 	expected := "ray@tomlinson.net -> ray.tomlinson@mail.org"
-	emailclient.SendMail("ray@tomlinson.net", "ray.tomlinson@mail.org", "QWERTYIOP")
+	emailclient.SendMail("ray@tomlinson.net", "ray.tomlinson@mail.org", "Subject: QWERTYIOP\n\nBody")
 	if received != expected {
 		t.Error("Expected:", expected, " Received:", received)
 	}

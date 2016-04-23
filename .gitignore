@@ -26,3 +26,5 @@ _testmain.go
 gpg-validation-server
 
 .idea/
+
+coverage.txt

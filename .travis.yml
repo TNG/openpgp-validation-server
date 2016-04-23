@@ -10,7 +10,7 @@ before_install:
 script:
   - ./enforce_gofmt.sh
   - ./test.sh
-  - gometalinter ./...
+  - gometalinter --deadline=15s ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

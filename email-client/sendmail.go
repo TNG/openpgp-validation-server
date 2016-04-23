@@ -6,7 +6,8 @@ import (
 	"net/smtp"
 )
 
-func SendMail(email, recipient, message string) {
+// SendMail tries to send the given message from the sender to the recipient
+func SendMail(sender, recipient, message string) {
 	// Connect to the remote SMTP server.
 	c, err := smtp.Dial("127.0.0.1:2525")
 	if err != nil {
@@ -14,10 +15,10 @@ func SendMail(email, recipient, message string) {
 	}
 
 	// Set the sender and recipient first
-	if err := c.Mail(email); err != nil {
+	if err = c.Mail(sender); err != nil {
 		log.Fatal(err)
 	}
-	if err := c.Rcpt(recipient); err != nil {
+	if err = c.Rcpt(recipient); err != nil {
 		log.Fatal(err)
 	}
 

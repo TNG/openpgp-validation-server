@@ -12,7 +12,7 @@ import (
 	"github.com/TNG/gpg-validation-server/email-client"
 )
 
-var received string
+var receive_chan = make(chan string)
 
 func init() {
 	server := Create("127.0.0.1:2525", mailHandler)
@@ -25,13 +25,13 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	received = fmt.Sprintf("%s -> %s", from, to[0])
+	receive_chan <- fmt.Sprintf("%s -> %s", from, to[0])
 }
 
 func TestReceiveMail(t *testing.T) {
-	received = ""
 	expected := "ray@tomlinson.net -> ray.tomlinson@mail.org"
 	emailclient.SendMail("ray@tomlinson.net", "ray.tomlinson@mail.org", "Subject: QWERTYIOP\n\nBody")
+	received := <-receive_chan
 	if received != expected {
 		t.Error("Expected:", expected, " Received:", received)
 	}

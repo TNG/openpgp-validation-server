@@ -2,12 +2,12 @@ package emailserver
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/TNG/gpg-validation-server/email-client"
 	"net"
 	"net/mail"
 	"testing"
-	"github.com/TNG/gpg-validation-server/email-client"
 	"time"
-	"fmt"
 )
 
 var received string
@@ -31,4 +31,3 @@ func TestReceiveMail(t *testing.T) {
 		t.Error("Expected:", expected, " Received:", received)
 	}
 }
-

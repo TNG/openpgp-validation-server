@@ -5,8 +5,7 @@ import (
 	"net"
 	"net/mail"
 	"testing"
-	"gpg-validation-server/email-client"
-	"gpg-validation-server/email-server"
+	"github.com/TNG/gpg-validation-server/email-client"
 	"time"
 	"fmt"
 )
@@ -14,7 +13,7 @@ import (
 var received string
 
 func init() {
-	server := emailserver.Create("127.0.0.1:2525", mailHandler)
+	server := Create("127.0.0.1:2525", mailHandler)
 	go server.Run()
 	time.Sleep(1 * time.Millisecond)
 }

@@ -4,5 +4,8 @@ go:
   - 1.6
 
 script:
-  - go test -timeout 30s -v ./...
   - ./enforce_gofmt.sh
+  - ./test.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

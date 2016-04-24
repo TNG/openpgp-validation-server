@@ -31,7 +31,10 @@ func TestSendEmail(t *testing.T) {
 	}()
 
 	time.Sleep(2 * time.Second) // TODO Better synchronisation
-	SendMail("test@server.local", "Test Server", "Subject: Here is your mail!\n\nContent of mail.")
+	err := SendMail("test@server.local", "Test Server", "Subject: Here is your mail!\n\nContent of mail.")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	result := <-resultChannel
 	if result != "Test Server" {

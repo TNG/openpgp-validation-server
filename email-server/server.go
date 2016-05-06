@@ -2,16 +2,10 @@ package emailserver
 
 import (
 	"log"
-	"net"
-	"mime"
-	"bytes"
 	"io"
-	"io/ioutil"
-	"net/mail"
-	"mime/multipart"
+	"bytes"
+	"net"
 	"github.com/mhale/smtpd"
-	"errors"
-	"fmt"
 )
 
 type Mail struct {
@@ -23,7 +17,7 @@ type Mail struct {
 }
 
 type Handler func(mail *Mail)
-type Parser func(message *mail.Message) (*Mail, error)
+type Parser func(reader io.Reader) (*MimeEntity, error)
 
 // MailServer contains the information necessary to run
 // a server which receives and handles mail.
@@ -39,69 +33,38 @@ func Create(Address string, Handler Handler) *MailServer {
 }
 
 func (server *MailServer) mailHandler(origin net.Addr, fromAddress string, toAddresses []string, data []byte) {
-	message, err := mail.ReadMessage(bytes.NewReader(data))
+	reader := bytes.NewReader(data)
+	parsedMail, err := server.Parser(reader)
 	if err != nil {
-		log.Print(err)
-		return
+		log.Print("Error when parsing mail: ", err)
 	}
-	mail, err := server.Parser(message)
-	if err != nil {
-		log.Print(err)
-		return
+	mail := &Mail{
+		fromAddress,
+		toAddresses,
+		parsedMail.getHeader("Subject", ""),
+		findFirstText(parsedMail),
+		findAttachements(parsedMail),
 	}
 	mail.FromAddress = fromAddress
 	mail.ToAddresses = toAddresses
 	server.Handler(mail)
 }
 
-func parseMail(message *mail.Message) (*Mail, error) {
-	subject := message.Header.Get("Subject")
-	contentType := message.Header.Get("Content-Type")
-	contentType, params, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		return nil, err
+func findFirstText(entity *MimeEntity) string {
+	if len(entity.Text) > 0 {
+		return entity.Text
 	}
-	if contentType == "multipart/mixed" {
-		mail, err := parseMultipartMixedMessage(message.Body, params)
-		if err != nil {
-			return nil, err
+	for _, part := range entity.Parts {
+		text := findFirstText(&part)
+		if len(text) > 0 {
+			return text
 		}
-		mail.Subject = subject
-		return mail, nil
 	}
-	return nil, fmt.Errorf("Unknown mail content type: %s", contentType)
+	return ""
 }
 
-func parseMultipartMixedMessage(messageBody io.Reader, params map[string]string) (*Mail, error) {
-	boundary, ok := params["boundary"]
-	if !ok {
-		return nil, errors.New("multipart/mixed mail without boundary")
-	}
-
-	reader := multipart.NewReader(messageBody, boundary)
-	mail := &Mail{}
-	for {
-		part, err := reader.NextPart()
-		if err != nil {
-			if err == io.EOF {
-				return mail, nil
-			}
-			return nil, err
-		}
-		contentType := part.Header.Get("Content-Type")
-		switch contentType {
-		case "text/plain":
-			text, err := ioutil.ReadAll(part)
-			if err != nil {
-				return nil, err
-			}
-			mail.Text += string(text)
-		case "":
-			return nil, errors.New("No Content-Type found in multipart message part")
-		default:
-			return nil, errors.New("Unknown Content-Type (%s) found in multipart message part")
-		}
-	};
+func findAttachements(entity *MimeEntity) [][]byte {
+	return nil
 }
 
 // Run starts a goroutine which listens and processes mail as it arrives.

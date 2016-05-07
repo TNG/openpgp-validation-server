@@ -10,6 +10,7 @@ import (
 	"strings"
 	"io/ioutil"
 	"net/textproto"
+	"golang.org/x/net/html/charset"
 )
 
 type MimeEntity struct {
@@ -61,8 +62,8 @@ func parseEntity(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, erro
 		return nil, err
 	}
 
-	if contentType == "text/plain" {
-		return parseTextPlain(header, body)
+	if strings.HasPrefix(contentType, "text") {
+		return parseText(header, body, params)
 	}
 	if strings.HasPrefix(contentType, "multipart/") {
 		return parseMultipart(header, body, params)
@@ -70,7 +71,15 @@ func parseEntity(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, erro
 	return nil, fmt.Errorf("Unknown mail content type: %s", contentType)
 }
 
-func parseTextPlain(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, error) {
+func parseText(header textproto.MIMEHeader, body io.Reader, params map[string]string) (*MimeEntity, error) {
+	charsetLabel, ok := params["charset"]
+	var err error
+	if ok {
+		body, err = charset.NewReaderLabel(charsetLabel, body)
+		if err != nil {
+			return nil, err
+		}
+	}
 	text, err := ioutil.ReadAll(body)
 	if err != nil {
 		return nil, err
@@ -78,7 +87,8 @@ func parseTextPlain(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, e
 	return &MimeEntity{header, string(text), nil}, nil
 }
 
-func parseMultipart(header textproto.MIMEHeader, body io.Reader, params map[string]string) (*MimeEntity, error) {
+func parseMultipart(
+		header textproto.MIMEHeader, body io.Reader, params map[string]string) (*MimeEntity, error) {
 	boundary, ok := params["boundary"]
 	if !ok {
 		return nil, errors.New("multipart mail without boundary")

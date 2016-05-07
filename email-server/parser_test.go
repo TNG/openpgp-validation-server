@@ -61,7 +61,8 @@ func (builder *MailBuilder) withFinalMultipart(boundary, text string) *MailBuild
 	return builder.withMultipart(boundary, text).withFinalMultipartBoundary(boundary)
 }
 
-func (builder *MailBuilder) withMultipartWithHeader(boundary string, Header map[string][]string, text string) *MailBuilder {
+func (builder *MailBuilder) withMultipartWithHeader(
+		boundary string, Header map[string][]string, text string) *MailBuilder {
 	headerLines := make([]string, 0, len(Header))
 	for name, values := range Header {
 		for _, value := range values {
@@ -188,5 +189,41 @@ func TestInvalidContentType(t *testing.T) {
 		if mail != nil {
 			t.Error("Must not parse mail with invalid content type")
 		}
+	}
+}
+
+func TestNonAsciiChars(t *testing.T) {
+	// RFC 2045 requires that a Content-Transfer-Encoding (e.g. 8bit) is specified,
+	// However, for robustness this should also work without.
+	mailString := createMail().
+		withContentType("text/plain; charset=ISO-8859-15").
+		withText("\xe0\x20\x63\xf4\x74\xe9").
+		build()
+	mail, err := parseMailFromString(mailString)
+	if err != nil {
+		t.Error("Error while parsing a mail:", err)
+	}
+	if mail.Text != "à côté" {
+		t.Error("Expected: 'à côté', got", mail.Text)
+	}
+}
+
+func TestQuotedPrintableInMultipart(t *testing.T) {
+	// Should work out of the box, because mime/multipart handles this
+	partHeader := map[string][]string{
+		"Content-Type": []string{"text/plain; charset=ISO-8859-15"},
+		"Content-Transfer-Encoding": []string{"quoted-printable"},
+	}
+	mailString := createMail().
+		withContentType("multipart/mixed;boundary=\"frontier\"").
+		withMultipartWithHeader("frontier", partHeader, "B=E4renf=FC=DFe").
+		withFinalMultipartBoundary("frontier").
+		build()
+	mail, err := parseMailFromString(mailString)
+	if err != nil {
+		t.Error("Error while parsing a mail:", err)
+	}
+	if mail.Parts[0].Text != "Bärenfüße" {
+		t.Error("Expected: 'Bärenfüße', got", mail.Parts[0].Text)
 	}
 }

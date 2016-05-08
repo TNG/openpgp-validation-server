@@ -8,6 +8,7 @@ import (
 	"net"
 )
 
+// Mail describes a message received by the mail server
 type Mail struct {
 	FromAddress string
 	ToAddresses []string
@@ -16,15 +17,16 @@ type Mail struct {
 	Attachments [][]byte
 }
 
+// Handler is a callback type for treating received mail
 type Handler func(mail *Mail)
-type Parser func(reader io.Reader) (*MimeEntity, error)
+type parser func(reader io.Reader) (*MimeEntity, error)
 
 // MailServer contains the information necessary to run
 // a server which receives and handles mail.
 type MailServer struct {
 	Address string
 	Handler Handler
-	Parser  Parser
+	parser  parser
 }
 
 // Create returns a MailServer struct given a listening address and a mail handler.
@@ -34,7 +36,7 @@ func Create(Address string, Handler Handler) *MailServer {
 
 func (server *MailServer) mailHandler(origin net.Addr, fromAddress string, toAddresses []string, data []byte) {
 	reader := bytes.NewReader(data)
-	parsedMail, err := server.Parser(reader)
+	parsedMail, err := server.parser(reader)
 	if err != nil {
 		log.Print("Error when parsing mail: ", err)
 	}

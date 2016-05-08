@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// MimeEntity describes a multi-part MIME encoded message
 type MimeEntity struct {
 	Header textproto.MIMEHeader
 	Text   string

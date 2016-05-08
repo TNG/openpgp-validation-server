@@ -18,7 +18,7 @@ func init() {
 		var parts []MimeEntity
 		return &MimeEntity{header, "Hello World!", parts}, nil
 	}
-	server.Parser = fakeParser
+	server.parser = fakeParser
 	go server.Run()
 	time.Sleep(1 * time.Millisecond)
 }

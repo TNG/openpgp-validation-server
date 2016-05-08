@@ -1,7 +1,7 @@
 package emailserver
 
 import (
-	"gpg-validation-server/email-client"
+	"github.com/TNG/gpg-validation-server/email-client"
 	"io"
 	"net/textproto"
 	"testing"

@@ -1,18 +1,18 @@
 package emailserver
 
 import (
-	"log"
-	"io"
 	"bytes"
-	"net"
 	"github.com/mhale/smtpd"
+	"io"
+	"log"
+	"net"
 )
 
 type Mail struct {
 	FromAddress string
 	ToAddresses []string
-	Subject string
-	Text string
+	Subject     string
+	Text        string
 	Attachments [][]byte
 }
 
@@ -24,7 +24,7 @@ type Parser func(reader io.Reader) (*MimeEntity, error)
 type MailServer struct {
 	Address string
 	Handler Handler
-	Parser Parser
+	Parser  Parser
 }
 
 // Create returns a MailServer struct given a listening address and a mail handler.

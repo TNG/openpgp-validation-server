@@ -1,21 +1,21 @@
 package emailserver
 
 import (
-	"io"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/mail"
-	"strings"
-	"io/ioutil"
 	"net/textproto"
+	"strings"
 )
 
 type MimeEntity struct {
 	Header textproto.MIMEHeader
-	Text string
-	Parts []MimeEntity
+	Text   string
+	Parts  []MimeEntity
 }
 
 func (entity *MimeEntity) getHeader(name, defaultValue string) string {
@@ -99,5 +99,5 @@ func parseMultipart(header textproto.MIMEHeader, body io.Reader, params map[stri
 			return nil, err
 		}
 		result.Parts = append(result.Parts, *entity)
-	};
+	}
 }

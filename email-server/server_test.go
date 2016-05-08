@@ -1,18 +1,18 @@
 package emailserver
 
 import (
+	"gpg-validation-server/email-client"
 	"io"
+	"net/textproto"
 	"testing"
 	"time"
-	"net/textproto"
-	"gpg-validation-server/email-client"
 )
 
 var receiveChan = make(chan string)
 
 func init() {
 	server := Create("127.0.0.1:2525", mailTestHandler)
-	fakeParser := func (reader io.Reader) (*MimeEntity, error) {
+	fakeParser := func(reader io.Reader) (*MimeEntity, error) {
 		header := textproto.MIMEHeader{}
 		header.Set("Subject", "QWERTYIOP")
 		var parts []MimeEntity
@@ -39,7 +39,7 @@ func TestReceiveMail(t *testing.T) {
 	receivedFromAddress := <-receiveChan
 	receivedToAddress := <-receiveChan
 	receivedSubject := <-receiveChan
-	receivedText := <- receiveChan
+	receivedText := <-receiveChan
 
 	if receivedFromAddress != expectedFromAddress {
 		t.Error("Expected:", expectedFromAddress, " Received:", receivedFromAddress)

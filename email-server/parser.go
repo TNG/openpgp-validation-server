@@ -11,12 +11,19 @@ import (
 	"io/ioutil"
 	"net/textproto"
 	"golang.org/x/net/html/charset"
+	"log"
 )
 
 type MimeEntity struct {
 	Header textproto.MIMEHeader
 	Text string
 	Parts []MimeEntity
+	Attachment []byte
+}
+
+type MimeMediaType struct {
+	Value string
+	Params map[string]string
 }
 
 func (entity *MimeEntity) getHeader(name, defaultValue string) string {
@@ -44,35 +51,44 @@ func parseMail(reader io.Reader) (*MimeEntity, error) {
 	return entity, nil
 }
 
-func getContentType(header textproto.MIMEHeader) (string, map[string]string, error) {
-	contentType := header.Get("Content-Type")
-	if len(contentType) == 0 {
-		return "text/plain", nil, nil
+func getMimeMediaTypeFromHeader(
+		header textproto.MIMEHeader, key string, defaultValue string) (*MimeMediaType, error) {
+	values := header.Get(key)
+	if len(values) == 0 {
+		return &MimeMediaType{defaultValue, make(map[string]string)}, nil
 	}
-	contentType, params, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		return "", nil, err
-	}
-	return contentType, params, nil
-}
-
-func parseEntity(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, error) {
-	contentType, params, err := getContentType(header)
+	value, params, err := mime.ParseMediaType(values)
 	if err != nil {
 		return nil, err
 	}
-
-	if strings.HasPrefix(contentType, "text") {
-		return parseText(header, body, params)
-	}
-	if strings.HasPrefix(contentType, "multipart/") {
-		return parseMultipart(header, body, params)
-	}
-	return nil, fmt.Errorf("Unknown mail content type: %s", contentType)
+	return &MimeMediaType{value, params}, nil
 }
 
-func parseText(header textproto.MIMEHeader, body io.Reader, params map[string]string) (*MimeEntity, error) {
-	charsetLabel, ok := params["charset"]
+func parseEntity(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, error) {
+	contentType, err := getMimeMediaTypeFromHeader(header, "Content-Type", "text/plain")
+	if err != nil {
+		return nil, err
+	}
+	contentDisposition, err := getMimeMediaTypeFromHeader(header, "Content-Disposition", "")
+	if err != nil {
+		return nil, err
+	}
+	if contentDisposition.Value == "attachment" {
+		return createAttachment(contentDisposition, header, body)
+	}
+	if strings.HasPrefix(contentType.Value, "text/") {
+		return parseText(contentType, header, body)
+	}
+	if strings.HasPrefix(contentType.Value, "multipart/") {
+		return parseMultipart(contentType, header, body)
+	}
+	log.Printf("Ignoring non-attachment content of unknown type '%s'\n", header.Get("Content-Type"))
+	return nil, nil
+}
+
+func parseText(contentType *MimeMediaType, header textproto.MIMEHeader,
+		body io.Reader) (*MimeEntity, error) {
+	charsetLabel, ok := contentType.Params["charset"]
 	var err error
 	if ok {
 		body, err = charset.NewReaderLabel(charsetLabel, body)
@@ -84,16 +100,16 @@ func parseText(header textproto.MIMEHeader, body io.Reader, params map[string]st
 	if err != nil {
 		return nil, err
 	}
-	return &MimeEntity{header, string(text), nil}, nil
+	return &MimeEntity{header, string(text), nil, nil}, nil
 }
 
-func parseMultipart(
-		header textproto.MIMEHeader, body io.Reader, params map[string]string) (*MimeEntity, error) {
-	boundary, ok := params["boundary"]
+func parseMultipart(contentType *MimeMediaType, header textproto.MIMEHeader,
+		body io.Reader) (*MimeEntity, error) {
+	boundary, ok := contentType.Params["boundary"]
 	if !ok {
 		return nil, errors.New("multipart mail without boundary")
 	}
-	result := MimeEntity{header, "", make([]MimeEntity, 0)}
+	result := MimeEntity{header, "", make([]MimeEntity, 0), nil}
 
 	reader := multipart.NewReader(body, boundary)
 	for {
@@ -108,6 +124,17 @@ func parseMultipart(
 		if err != nil {
 			return nil, err
 		}
-		result.Parts = append(result.Parts, *entity)
-	};
+		if entity != nil {
+			result.Parts = append(result.Parts, *entity)
+		}
+	}
+}
+
+func createAttachment(contentDisposition *MimeMediaType, header textproto.MIMEHeader,
+		body io.Reader) (*MimeEntity, error) {
+	data, err := ioutil.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	return &MimeEntity{header, "", nil, data}, nil
 }

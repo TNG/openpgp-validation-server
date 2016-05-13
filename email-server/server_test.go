@@ -16,7 +16,7 @@ func init() {
 		header := textproto.MIMEHeader{}
 		header.Set("Subject", "QWERTYIOP")
 		var parts []MimeEntity
-		return &MimeEntity{header, "Hello World!", parts}, nil
+		return &MimeEntity{header, "Hello World!", parts, nil}, nil
 	}
 	server.Parser = fakeParser
 	go server.Run()

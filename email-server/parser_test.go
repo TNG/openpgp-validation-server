@@ -96,7 +96,7 @@ func TestParseEmptyMail(t *testing.T) {
 	if err != nil {
 		t.Error("Error while parsing mail", err)
 	}
-	if len(mail.Parts) > 0 || len(mail.Header) > 0 {
+	if len(mail.Parts) > 0 || len(mail.Header) > 0 || mail.Attachment != nil {
 		t.Error("Expected an empty mail.")
 		fmt.Printf("%d %d\n", len(mail.Parts), len(mail.Parts[0].Text))
 	}
@@ -111,8 +111,8 @@ func TestTextPlain(t *testing.T) {
 	if mail.Text != "Hello there!" {
 		t.Error("Expected text 'Hello there!', got", mail.Parts[0].Text)
 	}
-	if len(mail.Parts) > 0 {
-		t.Error("Must not find a subpart in a plain text mail.")
+	if len(mail.Parts) > 0 || mail.Attachment != nil {
+		t.Error("Must not find a subpart or attachment in a plain text mail.")
 	}
 }
 
@@ -125,8 +125,8 @@ func TestMultipartSinglePart(t *testing.T) {
 	if err != nil {
 		t.Error("Error while parsing a multipart mail:", err)
 	}
-	if len(mail.Text) > 0 {
-		t.Error("Must not set text attribute when reading a multipart mail")
+	if len(mail.Text) > 0 || mail.Attachment != nil {
+		t.Error("Must not set text or attachment when reading a multipart mail")
 	}
 	if len(mail.Parts) != 1 || mail.Parts[0].Text != "Hello there!" {
 		t.Errorf("Expected exactly one part with text 'Hello there!', got '%v'", mail.Parts)
@@ -144,8 +144,8 @@ func TestMultipartSeveralParts(t *testing.T) {
 	if err != nil {
 		t.Error("Error while parsing a multipart mail:", err)
 	}
-	if len(mail.Text) > 0 {
-		t.Error("Must not set text attribute when reading a multipart mail")
+	if len(mail.Text) > 0 || mail.Attachment != nil {
+		t.Error("Must not set text or attachment when reading a multipart mail")
 	}
 	if len(mail.Parts) != 3 ||
 		mail.Parts[0].Text != "Hello there!" ||
@@ -166,8 +166,8 @@ func TestMultipartNested(t *testing.T) {
 	if err != nil {
 		t.Error("Error while parsing a multipart mail:", err)
 	}
-	if len(mail.Text) > 0 {
-		t.Error("Must not set text attribute when reading a multipart mail")
+	if len(mail.Text) > 0 || mail.Attachment != nil {
+		t.Error("Must not set text or attachment when reading a multipart mail")
 	}
 	if len(mail.Parts) != 1 || len(mail.Parts[0].Text) > 0 || len(mail.Parts[0].Parts) != 1 {
 		t.Errorf("Expected exactly one nested part, got: %v", mail.Parts)
@@ -179,15 +179,12 @@ func TestMultipartNested(t *testing.T) {
 
 func TestInvalidContentType(t *testing.T) {
 	// second value is missing the boundary
-	invalidContentTypes := []string{"blah", "multipart/mixed;"}
+	invalidContentTypes := []string{"text/", "multipart/mixed;"}
 	for _, contentType := range invalidContentTypes {
 		mailString := createMail().withContentType(contentType).build()
 		mail, err := parseMailFromString(mailString)
-		if err == nil {
+		if err == nil || mail != nil {
 			t.Error("Expected an error when parsing mail with invalid content type")
-		}
-		if mail != nil {
-			t.Error("Must not parse mail with invalid content type")
 		}
 	}
 }
@@ -225,5 +222,27 @@ func TestQuotedPrintableInMultipart(t *testing.T) {
 	}
 	if mail.Parts[0].Text != "Bärenfüße" {
 		t.Error("Expected: 'Bärenfüße', got", mail.Parts[0].Text)
+	}
+}
+
+func TestAttachment(t *testing.T) {
+	partHeader := map[string][]string{
+		"Content-Type": []string{"application/octet-stream"},
+		"Content-Disposition": []string{"attachment; filename=\"test.pdf\""},
+	}
+	mailString := createMail().
+		withContentType("multipart/mixed;boundary=\"frontier\"").
+		withMultipartWithHeader("frontier", partHeader, "Pizza").
+		withFinalMultipartBoundary("frontier").
+		build()
+	mail, err := parseMailFromString(mailString)
+	if err != nil {
+		t.Error("Error while parsing a mail:", err)
+	}
+	if string(mail.Parts[0].Attachment) != "Pizza" {
+		t.Error("Expected attachment 'Pizza', got", string(mail.Parts[0].Attachment))
+	}
+	if len(mail.Parts[0].Text) > 0 || len(mail.Parts[0].Parts) > 0 {
+		t.Error("Must not set text or parts for an attachment.")
 	}
 }

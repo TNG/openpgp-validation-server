@@ -1,19 +1,20 @@
 package emailserver
 
 import (
-	"io"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/mail"
-	"strings"
-	"io/ioutil"
 	"net/textproto"
 	"golang.org/x/net/html/charset"
 	"log"
+	"strings"
 )
 
+// MimeEntity describes a multi-part MIME encoded message
 type MimeEntity struct {
 	Header textproto.MIMEHeader
 	Text string
@@ -24,6 +25,8 @@ type MimeEntity struct {
 type MimeMediaType struct {
 	Value string
 	Params map[string]string
+	Text   string
+	Parts  []MimeEntity
 }
 
 func (entity *MimeEntity) getHeader(name, defaultValue string) string {

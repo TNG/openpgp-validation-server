@@ -15,7 +15,7 @@ func parseMailFromString(source string) (*MimeEntity, error) {
 
 type MailBuilder struct {
 	Headers []string
-	Parts []string
+	Parts   []string
 }
 
 func createMail() *MailBuilder {

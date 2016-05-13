@@ -21,10 +21,10 @@ func TestReadEntity(t *testing.T) {
 		t.Error("Failed to read entity:", err)
 	}
 
-    _, ok := entity.Identities[expectedIdentity]
-    if ! ok {
-        t.Error("Could not find identity:", expectedIdentity)
-    }
+	_, ok := entity.Identities[expectedIdentity]
+	if !ok {
+		t.Error("Could not find identity:", expectedIdentity)
+	}
 }
 
 func TestReadEntityArmored(t *testing.T) {
@@ -38,8 +38,8 @@ func TestReadEntityArmored(t *testing.T) {
 		t.Error("Failed to read entity:", err)
 	}
 
-    _, ok := entity.Identities[expectedIdentity]
-    if ! ok {
-        t.Error("Could not find identity:", expectedIdentity)
-    }
+	_, ok := entity.Identities[expectedIdentity]
+	if !ok {
+		t.Error("Could not find identity:", expectedIdentity)
+	}
 }

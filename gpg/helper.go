@@ -15,7 +15,8 @@ func ReadEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
 	var pr *packet.Reader
 
 	if armored {
-		block, err := armor.Decode(r)
+		var block *armor.Block
+		block, err = armor.Decode(r)
 		if err != nil {
 			return nil, err
 		}

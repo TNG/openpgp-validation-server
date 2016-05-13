@@ -83,7 +83,8 @@ func TestDecryptPrivateKeys(t *testing.T) {
 
 const prefixClient = "../test-keys/new-MacGPG2/TEST-client gpg-validation-server (For Testing Only) test-gpg-validation@client.local (0xE93B112A) "
 const asciiKeyFileClient = prefixClient + "pub.asc"
-const binaryKeyFileClient = prefixClient + "pub.asc.gpg"
+
+// const binaryKeyFileClient = prefixClient + "pub.asc.gpg"
 
 func TestSignClientPublicKey(t *testing.T) {
 	serverEntity := readEntityFromFile(binaryKeyFilePrivate, false)

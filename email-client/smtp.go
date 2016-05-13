@@ -5,10 +5,31 @@ import (
 	"net/smtp"
 )
 
-// SendMail tries to send the given message from the sender to the recipient
-func SendMail(sender, recipient, message string) (err error) {
+// MailEnvelope describes an Email "Envelope", the minimal information
+// necessary to successfully send an Email via SMTP
+type MailEnvelope struct {
+	Sender, Recipient, Message string
+}
+
+// SendMailer interface is for classes that can send mail.
+type SendMailer interface {
+	SendMail(MailEnvelope) error
+}
+
+// Send the envelope via the specified SendMailer
+func (envelope MailEnvelope) Send(mailer SendMailer) (err error) {
+	return mailer.SendMail(envelope)
+}
+
+// SMTPSendMailer sends mails via one specified SMTP server
+type SMTPSendMailer struct {
+	Server string
+}
+
+// SendMail tries to send the given mail envelope via SMTP localhost
+func (mailer SMTPSendMailer) SendMail(envelope MailEnvelope) (err error) {
 	// Connect to the remote SMTP server.
-	c, err := smtp.Dial("127.0.0.1:2525")
+	c, err := smtp.Dial(mailer.Server)
 	if err != nil {
 		return err
 	}
@@ -20,10 +41,10 @@ func SendMail(sender, recipient, message string) (err error) {
 		}
 	}()
 
-	if err = c.Mail(sender); err != nil {
+	if err = c.Mail(envelope.Sender); err != nil {
 		return err
 	}
-	if err = c.Rcpt(recipient); err != nil {
+	if err = c.Rcpt(envelope.Recipient); err != nil {
 		return err
 	}
 
@@ -32,7 +53,7 @@ func SendMail(sender, recipient, message string) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(wc, message)
+	_, err = fmt.Fprintf(wc, envelope.Message)
 	if err != nil {
 		return err
 	}

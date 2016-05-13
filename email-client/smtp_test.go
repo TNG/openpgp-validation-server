@@ -10,9 +10,31 @@ import (
 	"time"
 )
 
-func TestSendEmail(t *testing.T) {
-	resultChannel := make(chan string)
+type mockSendMailer struct {
+	expectedSender, expectedRecipient, expectedMessage string
+}
 
+// SendMail that just checks expected Values
+func (mailer mockSendMailer) SendMail(envelope MailEnvelope) (err error) {
+	if envelope.Sender != mailer.expectedSender {
+		log.Fatal(envelope.Sender)
+	}
+	if envelope.Recipient != mailer.expectedRecipient {
+		log.Fatal(envelope.Recipient)
+	}
+	if envelope.Message != mailer.expectedMessage {
+		log.Fatal(envelope.Message)
+	}
+	return nil
+}
+
+func TestEmail(t *testing.T) {
+	mailer := mockSendMailer{"sender@localhost.local", "recipient@localhost.local", "Hey, you!"}
+	mail := MailEnvelope{"sender@localhost.local", "recipient@localhost.local", "Hey, you!"}
+	mailer.SendMail(mail)
+}
+
+func runMailServer(resultChannel chan string) {
 	mailHandler := func(origin net.Addr, from string, to []string, data []byte) {
 		message, err := mail.ReadMessage(bytes.NewReader(data))
 		if err != nil {
@@ -29,9 +51,16 @@ func TestSendEmail(t *testing.T) {
 			log.Fatal(err)
 		}
 	}()
+}
+
+func TestSMTPSendMailer(t *testing.T) {
+	resultChannel := make(chan string)
+	mailer := SMTPSendMailer{"127.0.0.1:2525"}
+	mail := MailEnvelope{"test@server.local", "Test Server", "Subject: Here is your mail!\n\nContent of mail."}
+	runMailServer(resultChannel)
 
 	time.Sleep(2 * time.Second) // TODO Better synchronisation
-	err := SendMail("test@server.local", "Test Server", "Subject: Here is your mail!\n\nContent of mail.")
+	err := mailer.SendMail(mail)
 	if err != nil {
 		log.Fatal(err)
 	}

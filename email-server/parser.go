@@ -25,8 +25,6 @@ type MimeEntity struct {
 type MimeMediaType struct {
 	Value string
 	Params map[string]string
-	Text   string
-	Parts  []MimeEntity
 }
 
 func (entity *MimeEntity) getHeader(name, defaultValue string) string {

@@ -35,7 +35,7 @@ func NewGPG(r io.Reader, passphrase []byte) (*GPG, error) {
 	return gpg, nil
 }
 
-// SignUserID signs an armored public key to correspond to the given identity.
+// SignUserID signs an armored public key as validated to correspond to the given identity.
 func (gpg *GPG) SignUserID(signedIdentity string, r io.Reader, w io.Writer) error {
 	clientEntity, err := ReadEntity(r, true)
 	if err != nil {

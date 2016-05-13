@@ -1,4 +1,4 @@
-package emailserver
+package mail
 
 import (
 	"errors"
@@ -41,7 +41,8 @@ func (entity *MimeEntity) getSubject() string {
 	return entity.getHeader("Subject", "")
 }
 
-func parseMail(reader io.Reader) (*MimeEntity, error) {
+// ParseMail returns a MimeEntity containing the parsed form of the input email
+func ParseMail(reader io.Reader) (*MimeEntity, error) {
 	message, err := mail.ReadMessage(reader)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot read message: %s", err)
@@ -139,4 +140,17 @@ func createAttachment(contentDisposition *MimeMediaType, header textproto.MIMEHe
 		return nil, err
 	}
 	return &MimeEntity{header, "", nil, data}, nil
+}
+
+func findFirstText(entity *MimeEntity) string {
+	if len(entity.Text) > 0 {
+		return entity.Text
+	}
+	for _, part := range entity.Parts {
+		text := findFirstText(&part)
+		if len(text) > 0 {
+			return text
+		}
+	}
+	return ""
 }

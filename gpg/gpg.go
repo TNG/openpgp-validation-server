@@ -63,6 +63,6 @@ func exportArmoredPublicKey(entity *openpgp.Entity, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	armoredWriter.Close()
+	err = armoredWriter.Close()
 	return err
 }

@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// Read a single entity from a reader containing a list of entities
+// ReadEntity reads a single entity from a reader containing a list of entities
 func ReadEntity(r io.Reader, index int, armored bool) (*openpgp.Entity, error) {
 	var entity *openpgp.Entity
 	var entityList openpgp.EntityList
@@ -26,7 +26,7 @@ func ReadEntity(r io.Reader, index int, armored bool) (*openpgp.Entity, error) {
 	return entity, nil
 }
 
-// Decrypt the private key and all private subkeys of an entity (in-place)
+// DecryptPrivateKeys decrypts the private key and all private subkeys of an entity (in-place)
 func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
 	err := entity.PrivateKey.Decrypt(passphrase)
 	if err != nil {
@@ -42,7 +42,7 @@ func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
 	return nil
 }
 
-// Use the server private key to sign the public key of the client to be validated as the given identity
+// SignClientPublicKey uses the server private key to sign the public key of the client to be validated as the given identity
 // signedIdentity must be one of clientEntity.Identities[NAME].Name
 // The private keys of serverEntity must be decrypted
 func SignClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, serverEntity *openpgp.Entity, w io.Writer) error {

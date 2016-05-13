@@ -3,27 +3,27 @@ package emailserver
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/net/html/charset"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime"
 	"mime/multipart"
 	"net/mail"
 	"net/textproto"
-	"golang.org/x/net/html/charset"
-	"log"
 	"strings"
 )
 
 // MimeEntity describes a multi-part MIME encoded message
 type MimeEntity struct {
-	Header textproto.MIMEHeader
-	Text string
-	Parts []MimeEntity
+	Header     textproto.MIMEHeader
+	Text       string
+	Parts      []MimeEntity
 	Attachment []byte
 }
 
 type MimeMediaType struct {
-	Value string
+	Value  string
 	Params map[string]string
 }
 
@@ -53,7 +53,7 @@ func parseMail(reader io.Reader) (*MimeEntity, error) {
 }
 
 func getMimeMediaTypeFromHeader(
-		header textproto.MIMEHeader, key string, defaultValue string) (*MimeMediaType, error) {
+	header textproto.MIMEHeader, key string, defaultValue string) (*MimeMediaType, error) {
 	values := header.Get(key)
 	if len(values) == 0 {
 		return &MimeMediaType{defaultValue, make(map[string]string)}, nil
@@ -88,7 +88,7 @@ func parseEntity(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, erro
 }
 
 func parseText(contentType *MimeMediaType, header textproto.MIMEHeader,
-		body io.Reader) (*MimeEntity, error) {
+	body io.Reader) (*MimeEntity, error) {
 	charsetLabel, ok := contentType.Params["charset"]
 	var err error
 	if ok {
@@ -105,7 +105,7 @@ func parseText(contentType *MimeMediaType, header textproto.MIMEHeader,
 }
 
 func parseMultipart(contentType *MimeMediaType, header textproto.MIMEHeader,
-		body io.Reader) (*MimeEntity, error) {
+	body io.Reader) (*MimeEntity, error) {
 	boundary, ok := contentType.Params["boundary"]
 	if !ok {
 		return nil, errors.New("multipart mail without boundary")
@@ -132,7 +132,7 @@ func parseMultipart(contentType *MimeMediaType, header textproto.MIMEHeader,
 }
 
 func createAttachment(contentDisposition *MimeMediaType, header textproto.MIMEHeader,
-		body io.Reader) (*MimeEntity, error) {
+	body io.Reader) (*MimeEntity, error) {
 	data, err := ioutil.ReadAll(body)
 	if err != nil {
 		return nil, err

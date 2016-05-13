@@ -62,7 +62,7 @@ func (builder *MailBuilder) withFinalMultipart(boundary, text string) *MailBuild
 }
 
 func (builder *MailBuilder) withMultipartWithHeader(
-		boundary string, Header map[string][]string, text string) *MailBuilder {
+	boundary string, Header map[string][]string, text string) *MailBuilder {
 	headerLines := make([]string, 0, len(Header))
 	for name, values := range Header {
 		for _, value := range values {
@@ -208,7 +208,7 @@ func TestNonAsciiChars(t *testing.T) {
 func TestQuotedPrintableInMultipart(t *testing.T) {
 	// Should work out of the box, because mime/multipart handles this
 	partHeader := map[string][]string{
-		"Content-Type": []string{"text/plain; charset=ISO-8859-15"},
+		"Content-Type":              []string{"text/plain; charset=ISO-8859-15"},
 		"Content-Transfer-Encoding": []string{"quoted-printable"},
 	}
 	mailString := createMail().
@@ -227,7 +227,7 @@ func TestQuotedPrintableInMultipart(t *testing.T) {
 
 func TestAttachment(t *testing.T) {
 	partHeader := map[string][]string{
-		"Content-Type": []string{"application/octet-stream"},
+		"Content-Type":        []string{"application/octet-stream"},
 		"Content-Disposition": []string{"attachment; filename=\"test.pdf\""},
 	}
 	mailString := createMail().

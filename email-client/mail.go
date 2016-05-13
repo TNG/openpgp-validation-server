@@ -28,9 +28,9 @@ func checkedWrite(buffer bytes.Buffer, s string) {
 }
 
 // ConstructEmail constructs an email to the given recipient consisting of the two MIMEParts
-func ConstructEmail(recipient string, part1, part2 MIMEPart) string {
+func ConstructEmail(recipient string, parts ...MIMEPart) string {
 	var mail bytes.Buffer
-	mw := multipart.NewWriter(&mail)
+	multipartWriter := multipart.NewWriter(&mail)
 	checkedWrite(mail, "\r\n")
 	checkedWrite(mail, "From: Test GPG Validation Server <test-gpg-validation-server@tngtech.com>\r\n")
 	checkedWrite(mail, "To: "+recipient+"\r\n")
@@ -46,22 +46,19 @@ func ConstructEmail(recipient string, part1, part2 MIMEPart) string {
 
 	// Now follow the MIME Headers
 	checkedWrite(mail, "Mime-Version: 1.0 (Golang 1.6)\r\n")
-	// checkedWrite(mail, "Content-Type: multipart/encrypted; boundary=\"" + mw.Boundary() + "\"; protocol=\"application/pgp-encrypted\";\r\n")
-	checkedWrite(mail, "Content-Type: multipart/plain; boundary=\""+mw.Boundary()+"\";\r\n")
+	// checkedWrite(mail, "Content-Type: multipart/encrypted; boundary=\"" + multipartWriter.Boundary() + "\"; protocol=\"application/pgp-encrypted\";\r\n")
+	checkedWrite(mail, "Content-Type: multipart/plain; boundary=\""+multipartWriter.Boundary()+"\";\r\n")
 	checkedWrite(mail, "\r\n")
 	checkedWrite(mail, "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)\r\n")
 
-	pw, _ := mw.CreatePart(part1.Headers)
-	_, err := pw.Write(part1.Message)
-	if err != nil {
-		panic(err)
+	for _, part := range parts {
+		partWriter, _ := multipartWriter.CreatePart(part.Headers)
+		_, err := partWriter.Write(part.Message)
+		if err != nil {
+			panic(err)
+		}
 	}
-	pw, _ = mw.CreatePart(part2.Headers)
-	_, err = pw.Write(part2.Message)
-	if err != nil {
-		panic(err)
-	}
-	err = mw.Close()
+	err := multipartWriter.Close()
 	if err != nil {
 		panic(err)
 	}

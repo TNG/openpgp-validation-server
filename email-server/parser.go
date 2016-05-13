@@ -22,6 +22,7 @@ type MimeEntity struct {
 	Attachment []byte
 }
 
+// MimeMediaType describes a Media Type with associated parameters
 type MimeMediaType struct {
 	Value  string
 	Params map[string]string

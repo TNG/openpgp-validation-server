@@ -16,49 +16,36 @@ const asciiKeyFilePrivate = prefix + "sec.asc"
 const binaryKeyFilePublic = prefix + "pub.asc.gpg"
 const binaryKeyFilePrivate = prefix + "sec.asc.gpg"
 
+func readEntityTest(t *testing.T, path string, armored bool) {
+	keyFile, err := os.Open(path)
+	if err != nil {
+		log.Fatal("Could not open test key file: ", err)
+	}
+
+	entity, err := ReadEntity(keyFile, armored)
+	if err != nil {
+		t.Error("Failed to read entity:", err)
+	}
+
+	_, ok := entity.Identities[expectedIdentity]
+	if !ok {
+		t.Error("Could not find identity:", expectedIdentity)
+	}
+
+	if entity.PrimaryKey == nil && entity.PrivateKey == nil {
+		t.Error("No keys found")
+	}
+}
+
 func TestReadEntity(t *testing.T) {
 	for _, path := range [2]string{binaryKeyFilePublic, binaryKeyFilePrivate} {
-		keyFile, err := os.Open(path)
-		if err != nil {
-			log.Fatal("Could not open test key file: ", err)
-		}
-
-		entity, err := ReadEntity(keyFile, false)
-		if err != nil {
-			t.Error("Failed to read entity:", err)
-		}
-
-		_, ok := entity.Identities[expectedIdentity]
-		if !ok {
-			t.Error("Could not find identity:", expectedIdentity)
-		}
-
-		if entity.PrimaryKey == nil && entity.PrivateKey == nil {
-			t.Error("No keys found")
-		}
+		readEntityTest(t, path, false)
 	}
 }
 
 func TestReadEntityArmored(t *testing.T) {
 	for _, path := range [2]string{asciiKeyFilePublic, asciiKeyFilePrivate} {
-		keyFile, err := os.Open(path)
-		if err != nil {
-			log.Fatal("Could not open test key file: ", err)
-		}
-
-		entity, err := ReadEntity(keyFile, true)
-		if err != nil {
-			t.Error("Failed to read entity:", err)
-		}
-
-		_, ok := entity.Identities[expectedIdentity]
-		if !ok {
-			t.Error("Could not find identity:", expectedIdentity)
-		}
-
-		if entity.PrimaryKey == nil && entity.PrivateKey == nil {
-			t.Error("No keys found")
-		}
+		readEntityTest(t, path, true)
 	}
 }
 

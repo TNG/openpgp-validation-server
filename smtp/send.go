@@ -1,7 +1,6 @@
 package smtp
 
 import (
-	"fmt"
 	"net/smtp"
 )
 
@@ -9,16 +8,6 @@ import (
 // necessary to successfully send an Email via SMTP
 type MailEnvelope struct {
 	Sender, Recipient, Message string
-}
-
-// SendMailer interface is for classes that can send mail.
-type SendMailer interface {
-	SendMail(MailEnvelope) error
-}
-
-// Send the envelope via the specified SendMailer
-func (envelope MailEnvelope) Send(mailer SendMailer) (err error) {
-	return mailer.SendMail(envelope)
 }
 
 // SingleServerSendMailer sends mails via one specified SMTP server
@@ -49,13 +38,13 @@ func (mailer SingleServerSendMailer) SendMail(envelope MailEnvelope) (err error)
 	}
 
 	// Send the email body.
-	wc, err := c.Data()
+	body, err := c.Data()
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(wc, envelope.Message)
+	_, err = body.Write([]byte(envelope.Message))
 	if err != nil {
 		return err
 	}
-	return wc.Close()
+	return body.Close()
 }

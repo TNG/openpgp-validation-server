@@ -3,6 +3,7 @@ package emailserver
 import (
 	"github.com/TNG/gpg-validation-server/email-client"
 	"io"
+	"log"
 	"net/textproto"
 	"testing"
 	"time"
@@ -35,7 +36,12 @@ func TestReceiveMail(t *testing.T) {
 	expectedToAddress := "ray.tomlinson@mail.org"
 	expectedSubject := "QWERTYIOP"
 	expectedText := "Hello World!"
-	_ = emailclient.SendMail(expectedFromAddress, expectedToAddress, "\n\n")
+	mailer := emailclient.SMTPSendMailer{Server: "127.0.0.1:2525"}
+	mail := emailclient.MailEnvelope{Sender: expectedFromAddress, Recipient: expectedToAddress, Message: "\n\n"}
+	err := mailer.SendMail(mail)
+	if err != nil {
+		log.Fatal(err)
+	}
 	receivedFromAddress := <-receiveChan
 	receivedToAddress := <-receiveChan
 	receivedSubject := <-receiveChan

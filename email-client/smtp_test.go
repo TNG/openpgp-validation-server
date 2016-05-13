@@ -31,7 +31,7 @@ func (mailer mockSendMailer) SendMail(envelope MailEnvelope) (err error) {
 func TestEmail(t *testing.T) {
 	mailer := mockSendMailer{"sender@localhost.local", "recipient@localhost.local", "Hey, you!"}
 	mail := MailEnvelope{"sender@localhost.local", "recipient@localhost.local", "Hey, you!"}
-	mailer.SendMail(mail)
+	_ = mailer.SendMail(mail)
 }
 
 func runMailServer(resultChannel chan string) {

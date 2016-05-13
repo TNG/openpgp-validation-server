@@ -20,7 +20,7 @@ func ReadEntity(r io.Reader, index int, armored bool) (*openpgp.Entity, error) {
 	if err != nil {
 		return nil, err
 	}
-    
+
 	entity = entityList[index]
 
 	return entity, nil
@@ -28,18 +28,18 @@ func ReadEntity(r io.Reader, index int, armored bool) (*openpgp.Entity, error) {
 
 // Decrypt the private key and all private subkeys of an entity (in-place)
 func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
-    err := entity.PrivateKey.Decrypt(passphrase)
-    if err != nil {
-        return err
-    }
-    
-    for _, subkey := range entity.Subkeys {
-        err = subkey.PrivateKey.Decrypt(passphrase)
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+	err := entity.PrivateKey.Decrypt(passphrase)
+	if err != nil {
+		return err
+	}
+
+	for _, subkey := range entity.Subkeys {
+		err = subkey.PrivateKey.Decrypt(passphrase)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Use the server private key to sign the public key of the client to be validated as the given identity

@@ -6,15 +6,8 @@ import (
 	"net"
 )
 
-// Mail describes a message received by the mail server
-type Mail struct {
-	FromAddress string
-	ToAddresses []string
-	Content     []byte
-}
-
 // Handler is a callback type for treating received mail
-type Handler func(mail *Mail)
+type Handler func(mail *MailEnvelope)
 
 // MailServer contains the information necessary to run
 // a server which receives and handles mail.
@@ -29,7 +22,7 @@ func NewServer(Address string, Handler Handler) *MailServer {
 }
 
 func (server *MailServer) mailHandler(origin net.Addr, fromAddress string, toAddresses []string, data []byte) {
-	mail := Mail{fromAddress, toAddresses, data}
+	mail := MailEnvelope{fromAddress, toAddresses, data}
 	server.Handler(&mail)
 }
 

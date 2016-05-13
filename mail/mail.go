@@ -1,4 +1,4 @@
-package emailclient
+package mail
 
 import (
 	"bytes"

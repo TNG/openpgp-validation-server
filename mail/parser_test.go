@@ -1,4 +1,4 @@
-package emailserver
+package mail
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ var crlf = "\r\n"
 
 func parseMailFromString(source string) (*MimeEntity, error) {
 	reader := strings.NewReader(source)
-	return parseMail(reader)
+	return ParseMail(reader)
 }
 
 type MailBuilder struct {

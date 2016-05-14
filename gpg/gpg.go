@@ -61,3 +61,8 @@ func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
 	err = SignClientPublicKey(clientEntity, signedIdentity, gpg.serverEntity, w)
 	return err
 }
+
+// SignMessage signs message and writes the armored signature to w.
+func (gpg *GPG) SignMessage(message io.Reader, w io.Writer) error {
+	return openpgp.ArmoredDetachSign(w, gpg.serverEntity, message, nil)
+}

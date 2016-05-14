@@ -11,26 +11,27 @@ import (
 )
 
 type mockSendMailer struct {
-	expectedSender, expectedRecipient, expectedMessage string
+	expectedSender, expectedRecipient string
+	expectedContent                   []byte
 }
 
 // SendMail that just checks expected Values
 func (mailer mockSendMailer) SendMail(envelope MailEnvelope) (err error) {
-	if envelope.Sender != mailer.expectedSender {
-		log.Fatal(envelope.Sender)
+	if envelope.From != mailer.expectedSender {
+		log.Fatal(envelope.From)
 	}
-	if envelope.Recipient != mailer.expectedRecipient {
-		log.Fatal(envelope.Recipient)
+	if envelope.To[0] != mailer.expectedRecipient {
+		log.Fatal(envelope.To)
 	}
-	if envelope.Message != mailer.expectedMessage {
-		log.Fatal(envelope.Message)
+	if !bytes.Equal(envelope.Content, mailer.expectedContent) {
+		log.Fatal(envelope.Content)
 	}
 	return nil
 }
 
 func TestEmail(t *testing.T) {
-	mailer := mockSendMailer{"sender@localhost.local", "recipient@localhost.local", "Hey, you!"}
-	mail := MailEnvelope{"sender@localhost.local", "recipient@localhost.local", "Hey, you!"}
+	mailer := mockSendMailer{"sender@localhost.local", "recipient@localhost.local", []byte("Hey, you!")}
+	mail := MailEnvelope{"sender@localhost.local", []string{"recipient@localhost.local"}, []byte("Hey, you!")}
 	_ = mailer.SendMail(mail)
 }
 
@@ -56,10 +57,10 @@ func runMailServer(resultChannel chan string) {
 func TestSingleServerSendMailer(t *testing.T) {
 	resultChannel := make(chan string)
 	mailer := SingleServerSendMailer{"127.0.0.1:2526"}
-	mail := MailEnvelope{"test@server.local", "Test Server", "Subject: Here is your mail!\n\nContent of mail."}
+	mail := MailEnvelope{"test@server.local", []string{"Test Server"}, []byte("Subject: Here is your mail!\n\nContent of mail.")}
 	runMailServer(resultChannel)
 
-	time.Sleep(2 * time.Second) // TODO Better synchronisation
+	time.Sleep(1 * time.Second) // TODO Better synchronisation
 	err := mailer.SendMail(mail)
 	if err != nil {
 		log.Fatal(err)

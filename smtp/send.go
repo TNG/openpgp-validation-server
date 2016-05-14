@@ -4,12 +4,6 @@ import (
 	"net/smtp"
 )
 
-// MailEnvelope describes an Email "Envelope", the minimal information
-// necessary to successfully send an Email via SMTP
-type MailEnvelope struct {
-	Sender, Recipient, Message string
-}
-
 // SingleServerSendMailer sends mails via one specified SMTP server
 type SingleServerSendMailer struct {
 	Server string
@@ -30,11 +24,13 @@ func (mailer SingleServerSendMailer) SendMail(envelope MailEnvelope) (err error)
 		}
 	}()
 
-	if err = c.Mail(envelope.Sender); err != nil {
+	if err = c.Mail(envelope.From); err != nil {
 		return err
 	}
-	if err = c.Rcpt(envelope.Recipient); err != nil {
-		return err
+	for _, to := range envelope.To {
+		if err = c.Rcpt(to); err != nil {
+			return err
+		}
 	}
 
 	// Send the email body.
@@ -42,7 +38,7 @@ func (mailer SingleServerSendMailer) SendMail(envelope MailEnvelope) (err error)
 	if err != nil {
 		return err
 	}
-	_, err = body.Write([]byte(envelope.Message))
+	_, err = body.Write(envelope.Content)
 	if err != nil {
 		return err
 	}

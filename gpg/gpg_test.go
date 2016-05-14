@@ -14,7 +14,7 @@ func newGPGtest(t *testing.T, path string) {
 	if err != nil {
 		t.Fatal("Failed to open file:", path)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	gpg, err := NewGPG(file, passphrase)
 	if err != nil {
 		t.Fatal("Failed to create GPG object for", path, ":", err)
@@ -36,7 +36,7 @@ func setupGPG(t *testing.T) *GPG {
 	if err != nil {
 		t.Fatal("Failed to open file:", asciiKeyFilePrivate)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	gpg, err := NewGPG(file, passphrase)
 	if err != nil {
 		t.Fatal("Failed to create GPG object for", asciiKeyFilePrivate, ":", err)
@@ -51,7 +51,7 @@ func TestGPGSignUserIDWithCorrectEmail(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to open file:", asciiKeyFileClient)
 	}
-	defer clientPublicKeyFile.Close()
+	defer func() { _ = clientPublicKeyFile.Close() }()
 
 	buffer := new(bytes.Buffer)
 	err = gpg.SignUserID("test-gpg-validation@client.local", clientPublicKeyFile, buffer)
@@ -70,7 +70,7 @@ func TestGPGSignUserIDWithIncorrectEmail(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to open file:", asciiKeyFileClient)
 	}
-	defer clientPublicKeyFile.Close()
+	defer func() { _ = clientPublicKeyFile.Close() }()
 
 	buffer := new(bytes.Buffer)
 	err = gpg.SignUserID("impostor@faux.fake", clientPublicKeyFile, buffer)
@@ -94,7 +94,8 @@ func TestGPGSignMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to open file:", binaryKeyFilePublic)
 	}
-	defer keyFile.Close()
+	defer func() { _ = keyFile.Close() }()
+
 	keyRing, err := openpgp.ReadKeyRing(keyFile)
 	if err != nil {
 		t.Fatal("Failed to read key ring:", err)

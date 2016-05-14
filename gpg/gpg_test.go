@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os"
 	"testing"
+
+	"golang.org/x/crypto/openpgp"
 )
 
 func newGPGtest(t *testing.T, path string) {
@@ -62,5 +64,34 @@ func TestGPGSignUserIDWithIncorrectEmail(t *testing.T) {
 	err := gpg.SignUserID("impostor@faux.fake", clientPublicKeyFile, buffer)
 	if err == nil {
 		t.Fatal("Signed user id for fake email")
+	}
+}
+
+func TestGPGSignMessage(t *testing.T) {
+	gpg := setupGPG(t)
+	messageString := []byte("Hello World!")
+
+	message := bytes.NewReader(messageString)
+	signature := new(bytes.Buffer)
+	err := gpg.SignMessage(message, signature)
+	if err != nil {
+		t.Fatal("Signing message failed:", err)
+	}
+
+	keyFile, _ := os.Open(binaryKeyFilePublic)
+	defer keyFile.Close()
+	keyRing, err := openpgp.ReadKeyRing(keyFile)
+	if err != nil {
+		t.Fatal("Failed to read key ring:", err)
+	}
+
+	signer, err := openpgp.CheckArmoredDetachedSignature(keyRing, bytes.NewReader(messageString), signature)
+	if err != nil {
+		t.Error("Failed to verify signature:", err)
+	}
+
+	_, ok := signer.Identities[expectedIdentity]
+	if !ok {
+		t.Error("Signature not signed by", expectedIdentity)
 	}
 }

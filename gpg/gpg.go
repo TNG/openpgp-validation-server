@@ -14,7 +14,7 @@ type GPG struct {
 	serverEntity *openpgp.Entity
 }
 
-// NewGPG initializes GPG object from buffer containing the server's private key.
+// NewGPG initializes a GPG object from a buffer containing the server's private key.
 func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
 	var err error
 	buffer := new(bytes.Buffer)
@@ -40,7 +40,7 @@ func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
 	return gpg, nil
 }
 
-// SignUserID signs an armored public key as validated to correspond to the given identity.
+// SignUserID signs an armored public key read from r as validated to correspond to the given email and writes the signed public key to w.
 func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
 	clientEntity, err := ReadEntity(r, true)
 	if err != nil {

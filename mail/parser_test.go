@@ -156,7 +156,7 @@ func TestMultipartSeveralParts(t *testing.T) {
 }
 
 func TestMultipartNested(t *testing.T) {
-	nestedHeader := map[string][]string{"Content-Type": []string{"multipart/mixed;boundary=\"nested\""}}
+	nestedHeader := map[string][]string{"Content-Type": {"multipart/mixed;boundary=\"nested\""}}
 	mailString := createMail().withContentType("multipart/mixed;boundary=\"frontier\"").
 		withMultipartWithHeader("frontier", nestedHeader, "").
 		withFinalMultipart("nested", "This is a nested message.").
@@ -208,8 +208,8 @@ func TestNonAsciiChars(t *testing.T) {
 func TestQuotedPrintableInMultipart(t *testing.T) {
 	// Should work out of the box, because mime/multipart handles this
 	partHeader := map[string][]string{
-		"Content-Type":              []string{"text/plain; charset=ISO-8859-15"},
-		"Content-Transfer-Encoding": []string{"quoted-printable"},
+		"Content-Type":              {"text/plain; charset=ISO-8859-15"},
+		"Content-Transfer-Encoding": {"quoted-printable"},
 	}
 	mailString := createMail().
 		withContentType("multipart/mixed;boundary=\"frontier\"").
@@ -227,8 +227,8 @@ func TestQuotedPrintableInMultipart(t *testing.T) {
 
 func TestAttachment(t *testing.T) {
 	partHeader := map[string][]string{
-		"Content-Type":        []string{"application/octet-stream"},
-		"Content-Disposition": []string{"attachment; filename=\"test.pdf\""},
+		"Content-Type":        {"application/octet-stream"},
+		"Content-Disposition": {"attachment; filename=\"test.pdf\""},
 	}
 	mailString := createMail().
 		withContentType("multipart/mixed;boundary=\"frontier\"").

@@ -16,9 +16,11 @@ type GPG struct {
 
 // NewGPG initializes a GPG object from a buffer containing the server's private key.
 func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
-	var err error
 	buffer := new(bytes.Buffer)
-	buffer.ReadFrom(r)
+	_, err := buffer.ReadFrom(r)
+	if err != nil {
+		return nil, err
+	}
 
 	gpg := new(GPG)
 	for _, armored := range []bool{false, true} {

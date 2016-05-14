@@ -10,7 +10,10 @@ import (
 
 func newGPGtest(t *testing.T, path string) {
 	t.Log("Testing NewGPG for", path)
-	file, _ := os.Open(path)
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal("Failed to open file:", path)
+	}
 	defer file.Close()
 	gpg, err := NewGPG(file, passphrase)
 	if err != nil {
@@ -29,7 +32,10 @@ func TestNewGPG(t *testing.T) {
 }
 
 func setupGPG(t *testing.T) *GPG {
-	file, _ := os.Open(asciiKeyFilePrivate)
+	file, err := os.Open(asciiKeyFilePrivate)
+	if err != nil {
+		t.Fatal("Failed to open file:", asciiKeyFilePrivate)
+	}
 	defer file.Close()
 	gpg, err := NewGPG(file, passphrase)
 	if err != nil {
@@ -41,11 +47,14 @@ func setupGPG(t *testing.T) *GPG {
 func TestGPGSignUserIDWithCorrectEmail(t *testing.T) {
 	gpg := setupGPG(t)
 
-	clientPublicKeyFile, _ := os.Open(asciiKeyFileClient)
+	clientPublicKeyFile, err := os.Open(asciiKeyFileClient)
+	if err != nil {
+		t.Fatal("Failed to open file:", asciiKeyFileClient)
+	}
 	defer clientPublicKeyFile.Close()
 
 	buffer := new(bytes.Buffer)
-	err := gpg.SignUserID("test-gpg-validation@client.local", clientPublicKeyFile, buffer)
+	err = gpg.SignUserID("test-gpg-validation@client.local", clientPublicKeyFile, buffer)
 	if err != nil {
 		t.Fatal("Failed to sign user id:", err)
 	}
@@ -57,11 +66,14 @@ func TestGPGSignUserIDWithCorrectEmail(t *testing.T) {
 func TestGPGSignUserIDWithIncorrectEmail(t *testing.T) {
 	gpg := setupGPG(t)
 
-	clientPublicKeyFile, _ := os.Open(asciiKeyFileClient)
+	clientPublicKeyFile, err := os.Open(asciiKeyFileClient)
+	if err != nil {
+		t.Fatal("Failed to open file:", asciiKeyFileClient)
+	}
 	defer clientPublicKeyFile.Close()
 
 	buffer := new(bytes.Buffer)
-	err := gpg.SignUserID("impostor@faux.fake", clientPublicKeyFile, buffer)
+	err = gpg.SignUserID("impostor@faux.fake", clientPublicKeyFile, buffer)
 	if err == nil {
 		t.Fatal("Signed user id for fake email")
 	}
@@ -78,7 +90,10 @@ func TestGPGSignMessage(t *testing.T) {
 		t.Fatal("Signing message failed:", err)
 	}
 
-	keyFile, _ := os.Open(binaryKeyFilePublic)
+	keyFile, err := os.Open(binaryKeyFilePublic)
+	if err != nil {
+		t.Fatal("Failed to open file:", binaryKeyFilePublic)
+	}
 	defer keyFile.Close()
 	keyRing, err := openpgp.ReadKeyRing(keyFile)
 	if err != nil {

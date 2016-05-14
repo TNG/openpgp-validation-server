@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/mail"
+	"strings"
 	"testing"
 	"time"
 )
@@ -69,5 +70,14 @@ func TestSingleServerSendMailer(t *testing.T) {
 	result := <-resultChannel
 	if result != "Test Server" {
 		log.Fatal(result)
+	}
+}
+
+func TestSingleServerSendMailerFail(t *testing.T) {
+	mailer := SingleServerSendMailer{"127.0.0.1:2527"}
+	mail := MailEnvelope{"test@server.local", []string{"Fail Server"}, []byte("Subject: Here is your mail!\n\nContent of mail.")}
+	err := mailer.SendMail(mail)
+	if !strings.Contains(err.Error(), "connection refused") {
+		log.Fatal(err)
 	}
 }

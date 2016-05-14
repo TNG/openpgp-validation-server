@@ -1,6 +1,8 @@
 package gpg
 
 import (
+	"errors"
+	"fmt"
 	"io"
 
 	"golang.org/x/crypto/openpgp"
@@ -34,6 +36,9 @@ func ReadEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
 
 // DecryptPrivateKeys decrypts the private key and all private subkeys of an entity (in-place).
 func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
+	if entity.PrivateKey == nil {
+		return errors.New("Entity contains no private key to decrypt")
+	}
 	err := entity.PrivateKey.Decrypt(passphrase)
 	if err != nil {
 		return err
@@ -52,6 +57,11 @@ func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
 // The value of {signedIdentity} must be a valid key of {clientEntity.Identities}.
 // The private keys of {serverEntity} must have been decrypted before-hand.
 func SignClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, serverEntity *openpgp.Entity, w io.Writer) error {
+	_, ok := clientEntity.Identities[signedIdentity]
+	if !ok {
+		return errors.New(fmt.Sprint("Client does not have identity:", signedIdentity))
+	}
+
 	err := clientEntity.SignIdentity(signedIdentity, serverEntity, nil)
 	if err != nil {
 		return err

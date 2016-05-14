@@ -15,6 +15,7 @@ const asciiKeyFilePublic = prefix + "pub.asc"
 const asciiKeyFilePrivate = prefix + "sec.asc"
 const binaryKeyFilePublic = prefix + "pub.asc.gpg"
 const binaryKeyFilePrivate = prefix + "sec.asc.gpg"
+const passphrase = "validation"
 
 func readEntityTest(t *testing.T, path string, armored bool) {
 	keyFile, err := os.Open(path)
@@ -65,7 +66,7 @@ func readEntityFromFile(path string, armored bool) *openpgp.Entity {
 func TestDecryptPrivateKeys(t *testing.T) {
 	entity := readEntityFromFile(binaryKeyFilePrivate, false)
 
-	err := DecryptPrivateKeys(entity, []byte("validation"))
+	err := DecryptPrivateKeys(entity, []byte(passphrase))
 	if err != nil {
 		t.Fatal("Decryption failed:", err)
 	}
@@ -81,6 +82,7 @@ func TestDecryptPrivateKeys(t *testing.T) {
 	}
 }
 
+const expectedClientIdentity = "TEST-client gpg-validation-server (For Testing Only) <test-gpg-validation@client.local>"
 const prefixClient = "../test-keys/new-MacGPG2/TEST-client gpg-validation-server (For Testing Only) test-gpg-validation@client.local (0xE93B112A) "
 const asciiKeyFileClient = prefixClient + "pub.asc"
 
@@ -92,14 +94,12 @@ func TestSignClientPublicKey(t *testing.T) {
 	err := DecryptPrivateKeys(serverEntity, []byte("validation"))
 
 	clientEntity := readEntityFromFile(asciiKeyFileClient, true)
+
 	if err != nil {
 		t.Fatal("Failed to read entity:", err)
 	}
 
-	signedIdentity := ""
-	for signedIdentity = range clientEntity.Identities {
-		break
-	}
+	signedIdentity := expectedClientIdentity
 	oldSigCount := len(clientEntity.Identities[signedIdentity].Signatures)
 
 	buffer := new(bytes.Buffer)
@@ -119,10 +119,19 @@ func TestSignClientPublicKey(t *testing.T) {
 		t.Error("No new signatures found")
 	}
 
+	verifySignatureTest(t, signedIdentity, signedClientEntity)
+}
+
+func verifySignatureTest(t *testing.T, signedIdentity string, signedClientEntity *openpgp.Entity) {
 	serverPublicEntity := readEntityFromFile(binaryKeyFilePublic, false)
 
+	_, ok := signedClientEntity.Identities[signedIdentity]
+	if !ok {
+		t.Fatal("Signed entity does not have identity:", signedIdentity)
+	}
+
 	for index, signature := range signedClientEntity.Identities[signedIdentity].Signatures {
-		err = serverPublicEntity.PrimaryKey.VerifyUserIdSignature(signedIdentity, signedClientEntity.PrimaryKey, signature)
+		err := serverPublicEntity.PrimaryKey.VerifyUserIdSignature(signedIdentity, signedClientEntity.PrimaryKey, signature)
 		if err != nil {
 			t.Error("Signature", index, "not valid:", err)
 		}

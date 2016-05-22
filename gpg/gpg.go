@@ -16,17 +16,16 @@ type GPG struct {
 
 // NewGPG initializes a GPG object from a buffer containing the server's private key.
 func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
-	buffer := new(bytes.Buffer)
-	_, err := buffer.ReadFrom(r)
-	if err != nil {
-		return nil, err
-	}
+	var err error
+	var buffer bytes.Buffer
+	tee := io.TeeReader(r, &buffer)
 
 	gpg := new(GPG)
-	for _, armored := range []bool{false, true} {
-		gpg.serverEntity, err = ReadEntity(bytes.NewReader([]byte(buffer.String())), armored)
-		if err == nil {
-			break
+	gpg.serverEntity, err = readEntity(tee, true)
+	if err != nil {
+		gpg.serverEntity, err = readEntity(&buffer, false)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -34,7 +33,7 @@ func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
 		return nil, err
 	}
 
-	err = DecryptPrivateKeys(gpg.serverEntity, []byte(passphrase))
+	err = decryptPrivateKeys(gpg.serverEntity, []byte(passphrase))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
 
 // SignUserID signs an armored public key read from r as validated to correspond to the given email and writes the signed public key to w.
 func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
-	clientEntity, err := ReadEntity(r, true)
+	clientEntity, err := readEntity(r, true)
 	if err != nil {
 		return err
 	}
@@ -57,10 +56,10 @@ func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
 	}
 
 	if signedIdentity == "" {
-		return errors.New(fmt.Sprint("Could find", signedEMail, "in identities of client key"))
+		return errors.New(fmt.Sprint("Could not find", signedEMail, "in identities of client key"))
 	}
 
-	err = SignClientPublicKey(clientEntity, signedIdentity, gpg.serverEntity, w)
+	err = signClientPublicKey(clientEntity, signedIdentity, gpg.serverEntity, w)
 	return err
 }
 

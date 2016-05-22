@@ -15,7 +15,7 @@ func readEntityTest(t *testing.T, path string, armored bool) {
 		log.Fatal("Could not open test key file: ", err)
 	}
 
-	entity, err := ReadEntity(keyFile, armored)
+	entity, err := readEntity(keyFile, armored)
 	if err != nil {
 		t.Error("Failed to read entity:", err)
 	}
@@ -48,7 +48,7 @@ func readEntityFromFile(path string, armored bool) *openpgp.Entity {
 		log.Fatal("Could not open test key file: ", err)
 	}
 
-	entity, err := ReadEntity(keyFile, armored)
+	entity, err := readEntity(keyFile, armored)
 	if err != nil {
 		log.Fatal("Failed to read entity:", path)
 	}
@@ -58,7 +58,7 @@ func readEntityFromFile(path string, armored bool) *openpgp.Entity {
 func TestDecryptPrivateKeys(t *testing.T) {
 	entity := readEntityFromFile(binaryKeyFilePrivate, false)
 
-	err := DecryptPrivateKeys(entity, []byte(passphrase))
+	err := decryptPrivateKeys(entity, []byte(passphrase))
 	if err != nil {
 		t.Fatal("Decryption failed:", err)
 	}
@@ -77,7 +77,7 @@ func TestDecryptPrivateKeys(t *testing.T) {
 func TestSignClientPublicKey(t *testing.T) {
 	serverEntity := readEntityFromFile(binaryKeyFilePrivate, false)
 
-	err := DecryptPrivateKeys(serverEntity, []byte("validation"))
+	err := decryptPrivateKeys(serverEntity, []byte("validation"))
 
 	clientEntity := readEntityFromFile(asciiKeyFileClient, true)
 
@@ -89,12 +89,12 @@ func TestSignClientPublicKey(t *testing.T) {
 	oldSigCount := len(clientEntity.Identities[signedIdentity].Signatures)
 
 	buffer := new(bytes.Buffer)
-	err = SignClientPublicKey(clientEntity, signedIdentity, serverEntity, buffer)
+	err = signClientPublicKey(clientEntity, signedIdentity, serverEntity, buffer)
 	if err != nil {
 		t.Fatal("Signing failed:", err)
 	}
 
-	signedClientEntity, err := ReadEntity(buffer, true)
+	signedClientEntity, err := readEntity(buffer, true)
 	if err != nil {
 		t.Fatal("Failed to read signed key:", err)
 	}

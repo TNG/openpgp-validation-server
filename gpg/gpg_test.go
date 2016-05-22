@@ -23,6 +23,10 @@ func newGPGtest(t *testing.T, path string) {
 	if gpg.serverEntity == nil {
 		t.Error("Failed to initialize serverEntity for path:", path)
 	}
+
+	if _, ok := gpg.serverEntity.Identities[expectedIdentity]; !ok {
+		t.Error("Could not find identity in serverEntity")
+	}
 }
 
 func TestNewGPG(t *testing.T) {
@@ -59,7 +63,7 @@ func TestGPGSignUserIDWithCorrectEmail(t *testing.T) {
 		t.Fatal("Failed to sign user id:", err)
 	}
 
-	signedClientEntity, _ := ReadEntity(buffer, true)
+	signedClientEntity, _ := readEntity(buffer, true)
 	verifySignatureTest(t, expectedClientIdentity, signedClientEntity)
 }
 

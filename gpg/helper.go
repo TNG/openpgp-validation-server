@@ -10,8 +10,8 @@ import (
 	"golang.org/x/crypto/openpgp/packet"
 )
 
-// ReadEntity reads a single entity from a reader containing a list of entities.
-func ReadEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
+// readEntity reads a single entity from a reader containing a list of entities.
+func readEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
 	var entity *openpgp.Entity
 	var err error
 	var pr *packet.Reader
@@ -34,8 +34,8 @@ func ReadEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
 	return entity, nil
 }
 
-// DecryptPrivateKeys decrypts the private key and all private subkeys of an entity (in-place).
-func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
+// decryptPrivateKeys decrypts the private key and all private subkeys of an entity (in-place).
+func decryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
 	if entity.PrivateKey == nil {
 		return errors.New("Entity contains no private key to decrypt")
 	}
@@ -53,10 +53,10 @@ func DecryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
 	return nil
 }
 
-// SignClientPublicKey uses the server private key to sign the public key of the client to be validated as the given identity.
+// signClientPublicKey uses the server private key to sign the public key of the client to be validated as the given identity.
 // The value of {signedIdentity} must be a valid key of {clientEntity.Identities}.
 // The private keys of {serverEntity} must have been decrypted before-hand.
-func SignClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, serverEntity *openpgp.Entity, w io.Writer) error {
+func signClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, serverEntity *openpgp.Entity, w io.Writer) error {
 	_, ok := clientEntity.Identities[signedIdentity]
 	if !ok {
 		return errors.New(fmt.Sprint("Client does not have identity:", signedIdentity))

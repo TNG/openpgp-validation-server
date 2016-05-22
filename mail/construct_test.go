@@ -9,7 +9,7 @@ import (
 	"github.com/TNG/gpg-validation-server/gpg"
 )
 
-const prefix = "../test-keys/test-gpg-validation@server.local (0x87144E5E) "
+const prefix = "../test/keys/test-gpg-validation@server.local (0x87144E5E) "
 const asciiKeyFilePublic = prefix + "pub.asc"
 const asciiKeyFilePrivate = prefix + "sec.asc"
 const passphrase = "validation"

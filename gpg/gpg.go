@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
 	openpgpErrors "golang.org/x/crypto/openpgp/errors"
 )
 
@@ -83,25 +84,37 @@ func (gpg *GPG) CheckMessageSignature(message io.Reader, signature io.Reader, ch
 	return err
 }
 
+type encodeEncryptStream struct {
+	encryptStream, armorStream io.WriteCloser
+}
+
+func (s *encodeEncryptStream) Write(p []byte) (n int, err error) {
+	return s.encryptStream.Write(p)
+}
+
+func (s *encodeEncryptStream) Close() error {
+	err := s.encryptStream.Close()
+	if err != nil {
+		return err
+	}
+	return s.armorStream.Close()
+}
+
 // EncryptMessage encrypts a message using the server's entity for the given recipient and writes the cipher text to output.
-func (gpg *GPG) EncryptMessage(message io.Reader, output io.Writer, recipientKey io.Reader) error {
+func (gpg *GPG) EncryptMessage(output io.Writer, recipientKey io.Reader) (plaintext io.WriteCloser, err error) {
 	recipient, err := readEntityMaybeArmored(recipientKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	w, err := openpgp.Encrypt(output, []*openpgp.Entity{recipient}, gpg.serverEntity, nil, nil)
+	armorStream, err := armor.Encode(output, "PGP MESSAGE", map[string]string{"Version": "GnuPG v2"})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	_, err = io.Copy(w, message)
+	encryptStream, err := openpgp.Encrypt(armorStream, []*openpgp.Entity{recipient}, gpg.serverEntity, nil, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	err = w.Close()
-	return err
+	return &encodeEncryptStream{encryptStream, armorStream}, nil
 }
 
 // DecryptSignedMessage decrypts an encrypted message sent to server, checks the (mandatory) embedded signature made by the given sender and write the plain text to output.

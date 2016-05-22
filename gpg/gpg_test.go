@@ -167,12 +167,14 @@ func TestGPGCheckMessageSignature(t *testing.T) {
 func TestGPGEncryptMessage(t *testing.T) {
 	gpg := setupGPG(t)
 
-	message := bytes.NewReader(testMessageBytes)
 	cipherTextBuffer := new(bytes.Buffer)
 	recipientKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 
-	err := gpg.EncryptMessage(message, cipherTextBuffer, recipientKeyFile)
+	writeCloser, err := gpg.EncryptMessage(cipherTextBuffer, recipientKeyFile)
+	_, err = writeCloser.Write(testMessageBytes)
+	assert.Nil(t, err)
+	assert.Nil(t, writeCloser.Close())
 	require.NoError(t, err, "Encryption failed")
 
 	clientEntity := readEntityFromFile(asciiKeyFileClientSecret, true)
@@ -202,11 +204,13 @@ func TestGPGEncryptMessage(t *testing.T) {
 func TestGPGEncryptMessageWithInvalidRecipient(t *testing.T) {
 	gpg := setupGPG(t)
 
-	message := bytes.NewReader(testMessageBytes)
 	cipherTextBuffer := new(bytes.Buffer)
 	invalidRecipient := new(bytes.Buffer)
 
-	err := gpg.EncryptMessage(message, cipherTextBuffer, invalidRecipient)
+	writeCloser, err := gpg.EncryptMessage(cipherTextBuffer, invalidRecipient)
+	_, err = writeCloser.Write(testMessageBytes)
+	assert.Nil(t, err)
+	assert.Nil(t, writeCloser.Close())
 	if assert.Error(t, err, "Encrypting message to empty recipient key file succeeded") {
 		assert.Equal(t, io.EOF, err, "Unexpected error for encrypting message to empty recipient key file", err.Error())
 	}

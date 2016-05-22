@@ -7,7 +7,7 @@ import (
 )
 
 const expectedIdentity = "TEST gpg-validation-server (For Testing Only) <test-gpg-validation@server.local>"
-const prefix = "../test-keys/new-MacGPG2/TEST gpg-validation-server (For Testing Only) test-gpg-validation@server.local (0x87144E5E) "
+const prefix = "../test-keys/test-gpg-validation@server.local (0x87144E5E) "
 const asciiKeyFilePublic = prefix + "pub.asc"
 const asciiKeyFilePrivate = prefix + "sec.asc"
 const binaryKeyFilePublic = prefix + "pub.asc.gpg"
@@ -15,7 +15,7 @@ const binaryKeyFilePrivate = prefix + "sec.asc.gpg"
 const passphrase = "validation"
 
 const expectedClientIdentity = "TEST-client gpg-validation-server (For Testing Only) <test-gpg-validation@client.local>"
-const prefixClient = "../test-keys/new-MacGPG2/TEST-client gpg-validation-server (For Testing Only) test-gpg-validation@client.local (0xE93B112A) "
+const prefixClient = "../test-keys/test-gpg-validation@client.local (0xE93B112A) "
 const asciiKeyFileClient = prefixClient + "pub.asc"
 
 // const binaryKeyFileClient = prefixClient + "pub.asc.gpg"

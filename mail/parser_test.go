@@ -9,8 +9,13 @@ import (
 var crlf = "\r\n"
 
 func parseMailFromString(source string) (*MimeEntity, error) {
+	return parseMailFromStringWithGpg(source, nil)
+}
+
+func parseMailFromStringWithGpg(source string, gpg GpgUtility) (*MimeEntity, error) {
+	parser := &Parser{gpg}
 	reader := strings.NewReader(source)
-	return ParseMail(reader)
+	return parser.ParseMail(reader)
 }
 
 type MailBuilder struct {
@@ -244,5 +249,48 @@ func TestAttachment(t *testing.T) {
 	}
 	if len(mail.Parts[0].Text) > 0 || len(mail.Parts[0].Parts) > 0 {
 		t.Error("Must not set text or parts for an attachment.")
+	}
+}
+
+type MockGpg struct {
+	t                                                     *testing.T
+	expectedMicAlgorithm, expectedData, expectedSignature string
+}
+
+func (gpg *MockGpg) CheckSignature(micAlgorithm string, data []byte, signature []byte) bool {
+	if micAlgorithm != gpg.expectedMicAlgorithm {
+		gpg.t.Errorf("Expected micalg to be '%s', got '%s'", gpg.expectedMicAlgorithm, micAlgorithm)
+	}
+	if string(data) != gpg.expectedData {
+		gpg.t.Errorf("Expected data to be '%s', got '%s'", gpg.expectedData, string(data))
+	}
+	if string(signature) != gpg.expectedSignature {
+		gpg.t.Errorf("Expected signature to be '%s', got '%s'",
+			gpg.expectedSignature, string(signature))
+	}
+	return true
+}
+
+func TestMultipartSigned(t *testing.T) {
+	signedPartHeader := map[string][]string{"Content-Type": {"text/plain"}}
+	signatureHeader := map[string][]string{"Content-Type": {"application/pgp-signature"}}
+	mailString := createMail().
+		withContentType("multipart/signed; boundary=\"frontier\"; micalg=pgp-md5").
+		withMultipartWithHeader("frontier", signedPartHeader, "Hello there!").
+		withMultipartWithHeader("frontier", signatureHeader, "SIGNATURE").
+		withFinalMultipartBoundary("frontier").
+		build()
+
+	expectedSignedPart := "Content-Type: text/plain\r\n\r\nHello there!\r\n"
+	mockGpg := &MockGpg{t, "pgp-md5", expectedSignedPart, "SIGNATURE"}
+	mail, err := parseMailFromStringWithGpg(mailString, mockGpg)
+	if err != nil {
+		t.Error("Error while parsing a multipart/signed mail:", err)
+	}
+	if len(mail.Text) > 0 || mail.Attachment != nil {
+		t.Error("Must not set text or attachment when reading a multipart mail")
+	}
+	if !mail.IsSigned {
+		t.Error("Valid signature not detected")
 	}
 }

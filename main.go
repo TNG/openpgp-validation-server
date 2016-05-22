@@ -33,7 +33,8 @@ func processMailAction(c *cli.Context) error {
 		}
 	}
 
-	entity, _ := mail.ParseMail(input)
+	parser := mail.Parser{nil}
+	entity, _ := parser.ParseMail(input)
 	log.Println(entity)
 
 	return nil

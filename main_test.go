@@ -31,7 +31,7 @@ func TestProcessMailDefault(t *testing.T) {
 }
 
 func TestProcessMailFile(t *testing.T) {
-	testMainWithArguments(t, okExitCode, "process-mail", "--file", "./test-mails/plaintext.eml")
+	testMainWithArguments(t, okExitCode, "process-mail", "--file", "./test/mails/plaintext.eml")
 }
 
 func TestProcessFileError(t *testing.T) {

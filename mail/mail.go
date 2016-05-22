@@ -13,7 +13,7 @@ type MIMEPart struct {
 	Message []byte
 }
 
-// NewMIMEPart returns an empty MIME section with headers and message
+// NewMIMEPart returns an empty MIME section
 func NewMIMEPart() MIMEPart {
 	part := MIMEPart{}
 	part.Headers = make(textproto.MIMEHeader)
@@ -27,7 +27,7 @@ func checkedWrite(buffer bytes.Buffer, s string) {
 	}
 }
 
-// ConstructEmail constructs an email to the given recipient consisting of the two MIMEParts
+// ConstructEmail constructs an email to the given recipient consisting of the given MIMEParts
 func ConstructEmail(recipient string, parts ...MIMEPart) string {
 	var mail bytes.Buffer
 	multipartWriter := multipart.NewWriter(&mail)

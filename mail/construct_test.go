@@ -7,6 +7,7 @@ import (
 
 	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/test/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 const prefix = "../test/keys/test-gpg-validation@server.local (0x87144E5E) "
@@ -33,6 +34,7 @@ func TestConstructCryptSignEmail(t *testing.T) {
 	}
 
 	m := OutgoingMail{"It works!", "test-gpg-validation@client.local", clientKey, []byte{}, gpg}
-	b := m.Bytes()
+	b, err := m.Bytes()
+	assert.NoError(t, err)
 	log.Print(string(b))
 }

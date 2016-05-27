@@ -21,7 +21,7 @@ type OutgoingMail struct {
 }
 
 // Bytes returns the given message as an OpenPGP/MIME encrypted and signed message (RFC 2440 and 3156)
-func (m OutgoingMail) Bytes() []byte {
+func (m OutgoingMail) Bytes() ([]byte, error) {
 	w := bytes.Buffer{}
 	now := time.Now()
 	empw := NewEncodingMultipartWriter(&w, "encrypted", "application/pgp-encrypted", map[string]string{
@@ -35,41 +35,41 @@ func (m OutgoingMail) Bytes() []byte {
 	})
 	err := empw.WritePGPMIMEVersion()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	partWriter, err := empw.WriteInlineFile("encrypted.asc", "application/octet-stream", "OpenPGP encrypted message")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	plaintext, err := m.GPG.EncryptMessage(partWriter, bytes.NewBuffer(m.RecipientKey))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	encryptedMultipartWriter := NewEncodingMultipartWriter(plaintext, "mixed", "", nil)
 	err = encryptedMultipartWriter.WritePlainText(m.Message)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	encryptedKeyWriter, err := encryptedMultipartWriter.WriteAttachedFile("your_key.asc", "application/pgp-keys", "Your PGP Key")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	_, err = encryptedKeyWriter.Write(m.RecipientKey)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = encryptedMultipartWriter.Close()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = plaintext.Close()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = empw.Close()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return w.Bytes()
+	return w.Bytes(), nil
 }

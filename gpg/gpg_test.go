@@ -13,6 +13,8 @@ import (
 	"golang.org/x/crypto/openpgp/errors"
 )
 
+var testMessageBytes = []byte("Hello World!")
+
 func newGPGtest(t *testing.T, path string) {
 	t.Log("Testing NewGPG for", path)
 
@@ -105,9 +107,8 @@ func TestGPGSignUserIDWithInvalidKeyFile(t *testing.T) {
 
 func TestGPGSignMessage(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	message := bytes.NewReader(messageBytes)
+	message := bytes.NewReader(testMessageBytes)
 	signature := new(bytes.Buffer)
 	err := gpg.SignMessage(message, signature)
 	require.NoError(t, err, "Signing message failed")
@@ -118,7 +119,7 @@ func TestGPGSignMessage(t *testing.T) {
 	keyRing, err := openpgp.ReadKeyRing(keyFile)
 	require.NoError(t, err, "Failed to read key ring")
 
-	signer, err := openpgp.CheckArmoredDetachedSignature(keyRing, bytes.NewReader(messageBytes), signature)
+	signer, err := openpgp.CheckArmoredDetachedSignature(keyRing, bytes.NewReader(testMessageBytes), signature)
 	require.NoError(t, err, "Failed to verify signature")
 	assert.Contains(t, signer.Identities, expectedIdentity, "Signature signed by wrong identity")
 }
@@ -142,9 +143,8 @@ func checkMessageSignatureTest(t *testing.T, gpg *GPG, message, signature []byte
 
 func TestGPGCheckMessageSignature(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	message := bytes.NewReader(messageBytes)
+	message := bytes.NewReader(testMessageBytes)
 	signatureBuffer := new(bytes.Buffer)
 	err := gpg.SignMessage(message, signatureBuffer)
 	require.NoError(t, err, "Signing message failed")
@@ -152,23 +152,22 @@ func TestGPGCheckMessageSignature(t *testing.T) {
 	signatureBytes := signatureBuffer.Bytes()
 	t.Log("Signature:", string(signatureBytes))
 
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, asciiKeyFilePublic, nil)
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, binaryKeyFilePublic, nil)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, asciiKeyFilePublic, nil)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, binaryKeyFilePublic, nil)
 
 	// *KeyFileSecret contains both public and private key, so they can also be used to check the signature
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, asciiKeyFileSecret, nil)
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, binaryKeyFileSecret, nil)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, asciiKeyFileSecret, nil)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, binaryKeyFileSecret, nil)
 
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, asciiKeyFileClient, ErrUnknownIssuer)
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, binaryKeyFileClient, ErrUnknownIssuer)
-	checkMessageSignatureTest(t, gpg, messageBytes, signatureBytes, asciiKeyFileOther, ErrUnknownIssuer)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, asciiKeyFileClient, ErrUnknownIssuer)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, binaryKeyFileClient, ErrUnknownIssuer)
+	checkMessageSignatureTest(t, gpg, testMessageBytes, signatureBytes, asciiKeyFileOther, ErrUnknownIssuer)
 }
 
 func TestGPGEncryptMessage(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	message := bytes.NewReader(messageBytes)
+	message := bytes.NewReader(testMessageBytes)
 	cipherTextBuffer := new(bytes.Buffer)
 	recipientKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
@@ -190,7 +189,7 @@ func TestGPGEncryptMessage(t *testing.T) {
 
 	decryptedMessageBytes, err := ioutil.ReadAll(md.UnverifiedBody)
 	require.NoError(t, err, "Reading decrypted text failed")
-	assert.Equal(t, string(messageBytes), string(decryptedMessageBytes), "Decrypted text does not match")
+	assert.Equal(t, string(testMessageBytes), string(decryptedMessageBytes), "Decrypted text does not match")
 	if !assert.Nil(t, md.SignatureError, "Validating signature failed") {
 		t.Log("Signature error:", md.SignatureError)
 	}
@@ -202,9 +201,8 @@ func TestGPGEncryptMessage(t *testing.T) {
 
 func TestGPGEncryptMessageWithInvalidRecipient(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	message := bytes.NewReader(messageBytes)
+	message := bytes.NewReader(testMessageBytes)
 	cipherTextBuffer := new(bytes.Buffer)
 	invalidRecipient := new(bytes.Buffer)
 
@@ -238,27 +236,25 @@ func makeEncryptedMessage(t *testing.T, messageBytes []byte, signed bool) *bytes
 
 func TestGPGDecryptSignedMessage(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	cipherTextBuffer := makeEncryptedMessage(t, messageBytes, true)
-
+	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, true)
 	decryptedTextBuffer := new(bytes.Buffer)
 	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 
 	err := gpg.DecryptSignedMessage(bytes.NewBuffer(cipherTextBuffer.Bytes()), decryptedTextBuffer, senderKeyFile)
 	require.NoError(t, err, "Decryption failed")
-	assert.Equal(t, string(messageBytes), decryptedTextBuffer.String(), "Decrypted text does not match")
+	assert.Equal(t, string(testMessageBytes), decryptedTextBuffer.String(), "Decrypted text does not match")
 }
 
 func TestGPGDecryptSignedMessageWithUnsignedMessage(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	cipherTextBuffer := makeEncryptedMessage(t, messageBytes, false)
+	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, false)
 	decryptedTextBuffer := new(bytes.Buffer)
 	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
+
 	err := gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, senderKeyFile)
 	if assert.Error(t, err, "Decrypting unsigned succeeded") {
 		assert.Equal(t, ErrMessageNotSigned, err, "Unexpected error for decrypting unsigned message", err.Error())
@@ -267,12 +263,12 @@ func TestGPGDecryptSignedMessageWithUnsignedMessage(t *testing.T) {
 
 func TestGPGDecryptSignedMessageWithWrongSigner(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	cipherTextBuffer := makeEncryptedMessage(t, messageBytes, true)
+	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, true)
 	decryptedTextBuffer := new(bytes.Buffer)
 	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileOther)
 	defer cleanup()
+
 	err := gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, senderKeyFile)
 	if assert.Error(t, err, "Decrypting message from wrong signer succeeded") {
 		assert.Equal(t, ErrUnknownIssuer, err, "Unexpected error for decrypting message from wrong signer", err.Error())
@@ -285,6 +281,7 @@ func TestGPGDecryptSignedMessageWithEmptyMessage(t *testing.T) {
 	decryptedTextBuffer := new(bytes.Buffer)
 	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
+
 	err := gpg.DecryptSignedMessage(new(bytes.Buffer), decryptedTextBuffer, senderKeyFile)
 	if assert.Error(t, err, "Decrypting empty message succeeded") {
 		assert.Equal(t, io.EOF, err, "Unexpected error for decrypting empty message", err.Error())
@@ -293,11 +290,10 @@ func TestGPGDecryptSignedMessageWithEmptyMessage(t *testing.T) {
 
 func TestGPGDecryptSignedMessageWithEmptySenderKey(t *testing.T) {
 	gpg := setupGPG(t)
-	messageBytes := []byte("Hello World!")
 
-	cipherTextBuffer := makeEncryptedMessage(t, messageBytes, true)
-
+	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, true)
 	decryptedTextBuffer := new(bytes.Buffer)
+
 	err := gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, new(bytes.Buffer))
 	if assert.Error(t, err, "Decrypting message with empty sender key succeeded") {
 		assert.Equal(t, io.EOF, err, "Unexpected error for decrypting message with empty sender key", err.Error())

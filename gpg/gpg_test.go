@@ -213,6 +213,7 @@ func TestGPGEncryptMessageWithInvalidRecipient(t *testing.T) {
 }
 
 func makeEncryptedMessage(t *testing.T, messageBytes []byte, signed bool) *bytes.Buffer {
+	// Construct a message from client to server
 	var senderEntity *openpgp.Entity
 
 	recipientEntity := readEntityFromFile(asciiKeyFilePublic, true)
@@ -247,29 +248,26 @@ func TestGPGDecryptSignedMessage(t *testing.T) {
 	assert.Equal(t, string(testMessageBytes), decryptedTextBuffer.String(), "Decrypted text does not match")
 }
 
-func TestGPGDecryptSignedMessageWithUnsignedMessage(t *testing.T) {
+func decryptSignedMessageSignatureErrorTest(t *testing.T, signed bool, senderKeyFilePath string) error {
 	gpg := setupGPG(t)
 
-	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, false)
+	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, signed)
 	decryptedTextBuffer := new(bytes.Buffer)
-	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
+	senderKeyFile, cleanup := utils.Open(t, senderKeyFilePath)
 	defer cleanup()
 
-	err := gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, senderKeyFile)
+	return gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, senderKeyFile)
+}
+
+func TestGPGDecryptSignedMessageWithUnsignedMessage(t *testing.T) {
+	err := decryptSignedMessageSignatureErrorTest(t, false, asciiKeyFileClient)
 	if assert.Error(t, err, "Decrypting unsigned succeeded") {
 		assert.Equal(t, ErrMessageNotSigned, err, "Unexpected error for decrypting unsigned message", err.Error())
 	}
 }
 
 func TestGPGDecryptSignedMessageWithWrongSigner(t *testing.T) {
-	gpg := setupGPG(t)
-
-	cipherTextBuffer := makeEncryptedMessage(t, testMessageBytes, true)
-	decryptedTextBuffer := new(bytes.Buffer)
-	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileOther)
-	defer cleanup()
-
-	err := gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, senderKeyFile)
+	err := decryptSignedMessageSignatureErrorTest(t, true, asciiKeyFileOther)
 	if assert.Error(t, err, "Decrypting message from wrong signer succeeded") {
 		assert.Equal(t, ErrUnknownIssuer, err, "Unexpected error for decrypting message from wrong signer", err.Error())
 	}

@@ -3,7 +3,6 @@ package mail
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
-	"log"
 	"testing"
 )
 
@@ -14,7 +13,7 @@ func TestEmptyMultipartWriter(t *testing.T) {
 	assert.NoError(mpw.Close())
 	entity, err := ParseMail(buf) // TODO: Check contents of entity
 	assert.NoError(err)
-	log.Println(entity)
+	t.Log(entity)
 }
 
 func TestExtraHeader(t *testing.T) {
@@ -26,7 +25,7 @@ func TestExtraHeader(t *testing.T) {
 	assert.NoError(mpw.Close())
 	entity, err := ParseMail(buf) // TODO: Check contents of entity
 	assert.NoError(err)
-	log.Println(entity)
+	t.Log(entity)
 }
 
 func TestMultiPart(t *testing.T) {
@@ -51,5 +50,5 @@ func TestMultiPart(t *testing.T) {
 	assert.NoError(mpw.Close())
 	entity, err := ParseMail(buf) // TODO: Check contents of entity
 	assert.NoError(err)
-	log.Println(entity)
+	t.Log(entity)
 }

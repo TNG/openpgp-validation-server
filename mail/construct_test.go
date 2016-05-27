@@ -2,7 +2,6 @@ package mail
 
 import (
 	"io/ioutil"
-	"log"
 	"testing"
 
 	"github.com/TNG/gpg-validation-server/gpg"
@@ -36,5 +35,5 @@ func TestConstructCryptSignEmail(t *testing.T) {
 	m := OutgoingMail{"It works!", "test-gpg-validation@client.local", clientKey, []byte{}, gpg}
 	b, err := m.Bytes()
 	assert.NoError(t, err)
-	log.Print(string(b))
+	t.Log(string(b))
 }

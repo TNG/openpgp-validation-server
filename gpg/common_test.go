@@ -7,18 +7,21 @@ import (
 )
 
 const expectedIdentity = "TEST gpg-validation-server (For Testing Only) <test-gpg-validation@server.local>"
-const prefix = "../test-keys/test-gpg-validation@server.local (0x87144E5E) "
+const prefix = "../test/keys/test-gpg-validation@server.local (0x87144E5E) "
 const asciiKeyFilePublic = prefix + "pub.asc"
-const asciiKeyFilePrivate = prefix + "sec.asc"
+const asciiKeyFileSecret = prefix + "sec.asc"
 const binaryKeyFilePublic = prefix + "pub.asc.gpg"
-const binaryKeyFilePrivate = prefix + "sec.asc.gpg"
+const binaryKeyFileSecret = prefix + "sec.asc.gpg"
 const passphrase = "validation"
 
 const expectedClientIdentity = "TEST-client gpg-validation-server (For Testing Only) <test-gpg-validation@client.local>"
-const prefixClient = "../test-keys/test-gpg-validation@client.local (0xE93B112A) "
+const prefixClient = "../test/keys/test-gpg-validation@client.local (0xE93B112A) "
 const asciiKeyFileClient = prefixClient + "pub.asc"
+const binaryKeyFileClient = prefixClient + "pub.asc.gpg"
+const asciiKeyFileClientSecret = prefixClient + "sec.asc"
 
-// const binaryKeyFileClient = prefixClient + "pub.asc.gpg"
+const prefixOther = "../test/keys/test-gpg-validation@other.local (0xF043F26E) "
+const asciiKeyFileOther = prefixOther + "pub.asc"
 
 func verifySignatureTest(t *testing.T, signedIdentity string, signedClientEntity *openpgp.Entity) {
 	serverPublicEntity := readEntityFromFile(binaryKeyFilePublic, false)

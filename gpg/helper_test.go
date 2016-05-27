@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
-func readEntityTest(t *testing.T, path string, armored bool) {
+func readEntityTest(t *testing.T, path string, armored bool, expectedKeys [2]bool, expectedIdentity string) {
 	keyFile, err := os.Open(path)
 	if err != nil {
 		log.Fatal("Could not open test key file: ", err)
@@ -25,21 +25,33 @@ func readEntityTest(t *testing.T, path string, armored bool) {
 		t.Error("Could not find identity:", expectedIdentity)
 	}
 
-	if entity.PrimaryKey == nil && entity.PrivateKey == nil {
-		t.Error("No keys found")
+	if (entity.PrimaryKey != nil) != expectedKeys[0] {
+		if expectedKeys[0] {
+			t.Error("Expected public key, got none in:", path)
+		} else {
+			t.Error("Expected no public key, got one in:", path)
+		}
+	}
+
+	if (entity.PrivateKey != nil) != expectedKeys[1] {
+		if expectedKeys[0] {
+			t.Error("Expected private key, got none in:", path)
+		} else {
+			t.Error("Expected no private key, got one in:", path)
+		}
 	}
 }
 
 func TestReadEntity(t *testing.T) {
-	for _, path := range [2]string{binaryKeyFilePublic, binaryKeyFilePrivate} {
-		readEntityTest(t, path, false)
-	}
+	readEntityTest(t, binaryKeyFilePublic, false, [2]bool{true, false}, expectedIdentity)
+	readEntityTest(t, binaryKeyFileSecret, false, [2]bool{true, true}, expectedIdentity)
 }
 
 func TestReadEntityArmored(t *testing.T) {
-	for _, path := range [2]string{asciiKeyFilePublic, asciiKeyFilePrivate} {
-		readEntityTest(t, path, true)
-	}
+	readEntityTest(t, asciiKeyFilePublic, true, [2]bool{true, false}, expectedIdentity)
+	readEntityTest(t, asciiKeyFileSecret, true, [2]bool{true, true}, expectedIdentity)
+
+	readEntityTest(t, asciiKeyFileClient, true, [2]bool{true, false}, expectedClientIdentity)
 }
 
 func readEntityFromFile(path string, armored bool) *openpgp.Entity {
@@ -56,7 +68,7 @@ func readEntityFromFile(path string, armored bool) *openpgp.Entity {
 }
 
 func TestDecryptPrivateKeys(t *testing.T) {
-	entity := readEntityFromFile(binaryKeyFilePrivate, false)
+	entity := readEntityFromFile(binaryKeyFileSecret, false)
 
 	err := decryptPrivateKeys(entity, []byte(passphrase))
 	if err != nil {
@@ -75,7 +87,7 @@ func TestDecryptPrivateKeys(t *testing.T) {
 }
 
 func TestSignClientPublicKey(t *testing.T) {
-	serverEntity := readEntityFromFile(binaryKeyFilePrivate, false)
+	serverEntity := readEntityFromFile(binaryKeyFileSecret, false)
 
 	err := decryptPrivateKeys(serverEntity, []byte("validation"))
 

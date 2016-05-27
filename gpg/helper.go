@@ -1,6 +1,7 @@
 package gpg
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -34,10 +35,26 @@ func readEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
 	return entity, nil
 }
 
+// readEntityMaybeArmored reads one entity using readEntity, first trying to interpret the reader as armored then as unarmored.
+func readEntityMaybeArmored(r io.Reader) (*openpgp.Entity, error) {
+	var buffer bytes.Buffer
+	tee := io.TeeReader(r, &buffer)
+
+	entity, err := readEntity(tee, true)
+	if err != nil {
+		entity, err = readEntity(&buffer, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return entity, nil
+}
+
 // decryptPrivateKeys decrypts the private key and all private subkeys of an entity (in-place).
 func decryptPrivateKeys(entity *openpgp.Entity, passphrase []byte) error {
 	if entity.PrivateKey == nil {
-		return errors.New("Entity contains no private key to decrypt")
+		return ErrNoPrivateKey
 	}
 	err := entity.PrivateKey.Decrypt(passphrase)
 	if err != nil {

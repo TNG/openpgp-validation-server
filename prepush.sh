@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
 
-set -e
+set +e
 
-STATUS=0
-PIDS=""
+status=0
+pids=""
 
 ./enforce_gofmt.sh &
-PIDS+="$! "
+pids+="$! "
 
 go test -covermode=atomic ./... &  # Prefer short, human readable output of test results here
-PIDS+="$! "
+pids+="$! "
 
 ./lint.sh &
-PIDS+="$! "
+pids+="$! "
 
-for pid in $PIDS; do
+for pid in $pids; do
     wait $pid
-    if [ $? -ne 0 ]; then
-        STATUS=$?
+    result=$?
+    if [ $result -ne 0 ]; then
+        status=$result
     fi
 done
 
-exit $STATUS
+exit $status

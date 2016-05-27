@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/TNG/gpg-validation-server/mail"
 	"github.com/codegangsta/cli"
-	"io"
 	"log"
 	"os"
 )
@@ -20,7 +19,7 @@ func appAction(c *cli.Context) error {
 
 func processMailAction(c *cli.Context) error {
 	var err error
-	var input io.Reader
+	var input *os.File
 
 	file := c.String("file")
 
@@ -31,6 +30,7 @@ func processMailAction(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		defer func() { _ = input.Close() }()
 	}
 
 	parser := mail.Parser{Gpg:nil}

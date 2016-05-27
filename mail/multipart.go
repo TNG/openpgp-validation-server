@@ -87,12 +87,12 @@ func (w *EncodingMultipartWriter) writeFile(name, mimeType, description, disposi
 	})
 }
 
-// WriteInlineFile writes a multipart with an inline file
+// WriteInlineFile writes a multipart header for an inline file and provides a writer for the file contents
 func (w *EncodingMultipartWriter) WriteInlineFile(name, mimeType, description string) (io.Writer, error) {
 	return w.writeFile(name, mimeType, description, "inline")
 }
 
-// WriteAttachedFile returns a writer for an attached file
+// WriteAttachedFile writes a multipart header for an attached file and provides a writer for the file contents
 func (w *EncodingMultipartWriter) WriteAttachedFile(name, mimeType, description string) (io.Writer, error) {
 	return w.writeFile(name, mimeType, description, "attachment")
 }

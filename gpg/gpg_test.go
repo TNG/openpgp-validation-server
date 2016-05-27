@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/errors"
 )
 
@@ -167,12 +168,16 @@ func TestGPGCheckMessageSignature(t *testing.T) {
 func TestGPGEncryptMessage(t *testing.T) {
 	gpg := setupGPG(t)
 
-	message := bytes.NewReader(testMessageBytes)
 	cipherTextBuffer := new(bytes.Buffer)
 	recipientKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 
-	err := gpg.EncryptMessage(message, cipherTextBuffer, recipientKeyFile)
+	writeCloser, err := gpg.EncryptMessage(cipherTextBuffer, recipientKeyFile)
+	assert.NoError(t, err)
+	assert.NotNil(t, writeCloser)
+	_, err = writeCloser.Write(testMessageBytes)
+	assert.NoError(t, err)
+	assert.NoError(t, writeCloser.Close())
 	require.NoError(t, err, "Encryption failed")
 
 	clientEntity := readEntityFromFile(asciiKeyFileClientSecret, true)
@@ -182,7 +187,9 @@ func TestGPGEncryptMessage(t *testing.T) {
 
 	keyRing := openpgp.EntityList([]*openpgp.Entity{clientEntity, serverPublicEntity})
 
-	md, err := openpgp.ReadMessage(bytes.NewBuffer(cipherTextBuffer.Bytes()), keyRing, nil, nil)
+	block, err := armor.Decode(cipherTextBuffer)
+	assert.NoError(t, err)
+	md, err := openpgp.ReadMessage(block.Body, keyRing, nil, nil)
 	require.NoError(t, err, "Decryption failed")
 	assert.True(t, md.IsEncrypted, "Encrypted message has not actually been encrypted")
 	assert.True(t, md.IsSigned, "Encrypted message has not been signed")
@@ -190,7 +197,7 @@ func TestGPGEncryptMessage(t *testing.T) {
 	decryptedMessageBytes, err := ioutil.ReadAll(md.UnverifiedBody)
 	require.NoError(t, err, "Reading decrypted text failed")
 	assert.Equal(t, string(testMessageBytes), string(decryptedMessageBytes), "Decrypted text does not match")
-	if !assert.Nil(t, md.SignatureError, "Validating signature failed") {
+	if !assert.NoError(t, md.SignatureError, "Validating signature failed") {
 		t.Log("Signature error:", md.SignatureError)
 	}
 	assert.Equal(t, gpg.serverEntity.PrimaryKey.KeyId, md.SignedByKeyId, "Message signed by wrong key")
@@ -201,12 +208,13 @@ func TestGPGEncryptMessage(t *testing.T) {
 
 func TestGPGEncryptMessageWithInvalidRecipient(t *testing.T) {
 	gpg := setupGPG(t)
+	assert.NotNil(t, gpg)
 
-	message := bytes.NewReader(testMessageBytes)
 	cipherTextBuffer := new(bytes.Buffer)
 	invalidRecipient := new(bytes.Buffer)
 
-	err := gpg.EncryptMessage(message, cipherTextBuffer, invalidRecipient)
+	writeCloser, err := gpg.EncryptMessage(cipherTextBuffer, invalidRecipient)
+	assert.Nil(t, writeCloser)
 	if assert.Error(t, err, "Encrypting message to empty recipient key file succeeded") {
 		assert.Equal(t, io.EOF, err, "Unexpected error for encrypting message to empty recipient key file", err.Error())
 	}

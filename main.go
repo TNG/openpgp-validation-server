@@ -33,7 +33,7 @@ func processMailAction(c *cli.Context) error {
 		}
 	}
 
-	parser := mail.Parser{nil}
+	parser := mail.Parser{Gpg:nil}
 	entity, _ := parser.ParseMail(input)
 	log.Println(entity)
 

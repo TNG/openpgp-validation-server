@@ -194,7 +194,10 @@ func TestGPGEncryptMessage(t *testing.T) {
 
 	clientEntity := readEntityFromFile(asciiKeyFileClientSecret, true)
 	serverPublicEntity := readEntityFromFile(asciiKeyFilePublic, true)
-	decryptPrivateKeys(clientEntity, []byte(passphrase))
+	err = decryptPrivateKeys(clientEntity, []byte(passphrase))
+	if err != nil {
+		t.Fatal("Failed to decrypt private keys")
+	}
 	keyRing := openpgp.EntityList([]*openpgp.Entity{clientEntity, serverPublicEntity})
 
 	md, err := openpgp.ReadMessage(bytes.NewBuffer(cipherTextBuffer.Bytes()), keyRing, nil, nil)
@@ -258,7 +261,10 @@ func makeEncryptedMessage(t *testing.T, messageBytes []byte, signed bool) *bytes
 	recipientEntity := readEntityFromFile(asciiKeyFilePublic, true)
 	if signed {
 		senderEntity = readEntityFromFile(asciiKeyFileClientSecret, true)
-		decryptPrivateKeys(senderEntity, []byte(passphrase))
+		err := decryptPrivateKeys(senderEntity, []byte(passphrase))
+		if err != nil {
+			t.Fatal("Failed to decrypt private keys")
+		}
 	}
 
 	cipherTextBuffer := new(bytes.Buffer)
@@ -267,7 +273,10 @@ func makeEncryptedMessage(t *testing.T, messageBytes []byte, signed bool) *bytes
 	if err != nil {
 		t.Fatal(err)
 	}
-	w.Write(messageBytes)
+	_, err = w.Write(messageBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = w.Close()
 	if err != nil {
 		t.Fatal(err)

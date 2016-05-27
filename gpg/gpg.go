@@ -24,7 +24,7 @@ var ErrUnknownIdentity = errors.New("gpg: Identity not associated with client ke
 // ErrUnknownIssuer is returned when the issuer of a signature is not known.
 var ErrUnknownIssuer = openpgpErrors.ErrUnknownIssuer
 
-// GPG contains the data necessary to perform our cryptographical actions.
+// GPG contains the data necessary to perform our cryptographical actions, but hides the private key.
 type GPG struct {
 	serverEntity *openpgp.Entity
 }
@@ -47,14 +47,10 @@ func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
 	return gpg, nil
 }
 
-// SignUserID signs an armored public key read from r as validated to correspond to the given email and writes the signed public key to w.
-func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
-	clientEntity, err := readEntity(r, true)
-	if err != nil {
-		return err
-	}
+// SignUserID signs the part in the given public key corresponding to the given email and writes the signed public key to w.
+func (gpg *GPG) SignUserID(signedEMail string, pubkey Key, w io.Writer) error {
 	signedIdentity := ""
-	for _, identity := range clientEntity.Identities {
+	for _, identity := range pubkey.Identities {
 		if identity.UserId.Email == signedEMail {
 			signedIdentity = identity.Name
 			break
@@ -65,8 +61,7 @@ func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
 		return ErrUnknownIdentity
 	}
 
-	err = signClientPublicKey(clientEntity, signedIdentity, gpg.serverEntity, w)
-	return err
+	return signClientPublicKey(pubkey, signedIdentity, gpg.serverEntity, w)
 }
 
 // SignMessage signs message and writes the armored detached signature to w.
@@ -75,12 +70,10 @@ func (gpg *GPG) SignMessage(message io.Reader, w io.Writer) error {
 }
 
 // CheckMessageSignature checks whether an armored detached signature is valid for a given message and has been made by the given signer.
-func (gpg *GPG) CheckMessageSignature(message io.Reader, signature io.Reader, checkedSignerKey io.Reader) error {
-	checkedSignerEntity, err := readEntityMaybeArmored(checkedSignerKey)
-	keyRing := openpgp.EntityList([]*openpgp.Entity{checkedSignerEntity})
+func (gpg *GPG) CheckMessageSignature(message io.Reader, signature io.Reader, checkedSignerKey Key) error {
+	keyRing := openpgp.EntityList([]*openpgp.Entity{checkedSignerKey})
 
-	_, err = openpgp.CheckArmoredDetachedSignature(keyRing, message, signature)
-
+	_, err := openpgp.CheckArmoredDetachedSignature(keyRing, message, signature)
 	return err
 }
 
@@ -101,11 +94,7 @@ func (s *encodeEncryptStream) Close() error {
 }
 
 // EncryptMessage encrypts a message using the server's entity for the given recipient and writes the cipher text to output.
-func (gpg *GPG) EncryptMessage(output io.Writer, recipientKey io.Reader) (plaintext io.WriteCloser, err error) {
-	recipient, err := readEntityMaybeArmored(recipientKey)
-	if err != nil {
-		return nil, err
-	}
+func (gpg *GPG) EncryptMessage(output io.Writer, recipient Key) (plaintext io.WriteCloser, err error) {
 	armorStream, err := armor.Encode(output, "PGP MESSAGE", nil)
 	if err != nil {
 		return nil, err
@@ -118,12 +107,8 @@ func (gpg *GPG) EncryptMessage(output io.Writer, recipientKey io.Reader) (plaint
 }
 
 // DecryptSignedMessage decrypts an encrypted message sent to server, checks the (mandatory) embedded signature made by the given sender and write the plain text to output.
-func (gpg *GPG) DecryptSignedMessage(message io.Reader, output io.Writer, senderPublicKey io.Reader) error {
-	senderEntity, err := readEntityMaybeArmored(senderPublicKey)
-	if err != nil {
-		return err
-	}
-	keyRing := openpgp.EntityList([]*openpgp.Entity{gpg.serverEntity, senderEntity})
+func (gpg *GPG) DecryptSignedMessage(message io.Reader, output io.Writer, senderPublicKey Key) error {
+	keyRing := openpgp.EntityList([]*openpgp.Entity{gpg.serverEntity, senderPublicKey})
 
 	md, err := openpgp.ReadMessage(message, keyRing, nil, nil)
 	if err != nil {
@@ -135,7 +120,7 @@ func (gpg *GPG) DecryptSignedMessage(message io.Reader, output io.Writer, sender
 	if !md.IsSigned {
 		return ErrMessageNotSigned
 	}
-	if md.SignedByKeyId != senderEntity.PrimaryKey.KeyId {
+	if md.SignedByKeyId != senderPublicKey.PrimaryKey.KeyId {
 		return openpgpErrors.ErrUnknownIssuer
 	}
 

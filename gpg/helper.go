@@ -11,6 +11,14 @@ import (
 	"golang.org/x/crypto/openpgp/packet"
 )
 
+// Key is a reference to an OpenPGP entity containing some public keys
+type Key *openpgp.Entity
+
+// ReadKey reads a PGP public or private key from the given reader
+func ReadKey(r io.Reader) (Key, error) {
+	return readEntityMaybeArmored(r)
+}
+
 // readEntity reads a single entity from a reader containing a list of entities.
 func readEntity(r io.Reader, armored bool) (*openpgp.Entity, error) {
 	var entity *openpgp.Entity

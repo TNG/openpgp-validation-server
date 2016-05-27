@@ -83,7 +83,7 @@ func (gpg *GPG) CheckMessageSignature(message io.Reader, signature io.Reader, ch
 	return err
 }
 
-// EncryptMessage encrypts a message using the server's entity for the given recipient.
+// EncryptMessage encrypts a message using the server's entity for the given recipient and writes the cipher text to output.
 func (gpg *GPG) EncryptMessage(message io.Reader, output io.Writer, recipientKey io.Reader) error {
 	recipient, err := readEntityMaybeArmored(recipientKey)
 	if err != nil {
@@ -104,7 +104,7 @@ func (gpg *GPG) EncryptMessage(message io.Reader, output io.Writer, recipientKey
 	return err
 }
 
-// DecryptSignedMessage decrypts message sent to server and checks the (mandatory) embedded signature made by the given sender.
+// DecryptSignedMessage decrypts an encrypted message sent to server, checks the (mandatory) embedded signature made by the given sender and write the plain text to output.
 func (gpg *GPG) DecryptSignedMessage(message io.Reader, output io.Writer, senderPublicKey io.Reader) error {
 	senderEntity, err := readEntityMaybeArmored(senderPublicKey)
 	if err != nil {

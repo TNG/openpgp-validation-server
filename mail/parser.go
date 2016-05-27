@@ -118,7 +118,13 @@ func (parser *Parser) parseText(contentType *MimeMediaType, header textproto.MIM
 	if err != nil {
 		return nil, err
 	}
-	return &MimeEntity{header, string(text), nil, nil, false}, nil
+
+	return &MimeEntity{
+		Header:     header,
+		Text:       string(text),
+		Parts:      nil,
+		Attachment: nil,
+		IsSigned:   false}, nil
 }
 
 func (parser *Parser) parseMultipart(contentType *MimeMediaType, header textproto.MIMEHeader,
@@ -127,7 +133,12 @@ func (parser *Parser) parseMultipart(contentType *MimeMediaType, header textprot
 	if !ok {
 		return nil, errors.New("multipart mail without boundary")
 	}
-	result := MimeEntity{header, "", make([]MimeEntity, 0), nil, false}
+	result := MimeEntity{
+		Header:     header,
+		Text:       "",
+		Parts:      make([]MimeEntity, 0),
+		Attachment: nil,
+		IsSigned:   false}
 
 	reader := multipart.NewReader(body, boundary)
 	for {
@@ -198,7 +209,12 @@ func (parser *Parser) createAttachment(contentDisposition *MimeMediaType, header
 	if err != nil {
 		return nil, err
 	}
-	return &MimeEntity{header, "", nil, data, false}, nil
+	return &MimeEntity{
+		Header:     header,
+		Text:       "",
+		Parts:      nil,
+		Attachment: data,
+		IsSigned:   false}, nil
 }
 
 func findFirstText(entity *MimeEntity) string {

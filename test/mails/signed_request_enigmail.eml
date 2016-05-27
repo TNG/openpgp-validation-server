@@ -1,0 +1,92 @@
+From: GPG Client <test-gpg-validation@client.local>
+Subject: Sign this key!
+To: test-gpg-validation@server.local
+Message-ID: <57483981.3000509@client.local>
+Date: Fri, 27 May 2016 14:11:45 +0200
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101
+ Icedove/38.7.2
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="nDA93uUQ42mccim4cAGPcOsKn6Axg5M5J"
+
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--nDA93uUQ42mccim4cAGPcOsKn6Axg5M5J
+Content-Type: multipart/mixed; boundary="mkFTopIt55oPvv46QpMP9OU0pMNp7sXfE"
+From: GPG Client <test-gpg-validation@client.local>
+To: test-gpg-validation@server.local
+Message-ID: <57483981.3000509@client.local>
+Subject: Sign this key!
+
+--mkFTopIt55oPvv46QpMP9OU0pMNp7sXfE
+Content-Type: multipart/mixed;
+ boundary="------------060602080801030300060709"
+
+This is a multi-part message in MIME format.
+--------------060602080801030300060709
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Please sign this key.
+
+--------------060602080801030300060709
+Content-Type: application/pgp-keys;
+ name="0xE93B112A.asc"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+ filename="0xE93B112A.asc"
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v2
+
+mQENBFc2GAABCAD4IDbKgh3PQDLTR8UrGzOHIyQ2UVD2W6MSlI1n3GISuDhf8oGM
+w0DyzzLKsJ3Ors0xlzGCu40LfvZBrDgsX7Lo49nWZ5hiZoOifsoMwUmRrSt5Kxu7
++xtX+oS40HRPdPPeJPi1zQoX2rIgk8LiQg15DnhFObV8HyptRVUJaUDqxzl8tvX3
+2X3WP7/0AWaKuyPMFfEFIxg2YaCjVGS9G1MzcI5nO4Y4k+dHbBIbElyjeaOFSZL4
+FgwJs1Fwawhq2Gxy/dfY0TUpgHzox1ldl/3WcU5Eo4QH3Nq0rddp62XRAX0q8RUS
+yKywBV4JU1RPoZvvgI0be1vzaXwUREwzHjZRABEBAAG0V1RFU1QtY2xpZW50IGdw
+Zy12YWxpZGF0aW9uLXNlcnZlciAoRm9yIFRlc3RpbmcgT25seSkgPHRlc3QtZ3Bn
+LXZhbGlkYXRpb25AY2xpZW50LmxvY2FsPokBOAQTAQIAIgUCVzYYAAIbAwYLCQgH
+AwIGFQgCCQoLBBYCAwECHgECF4AACgkQQnRMwek7ESo7KwgAwbT6gziTzNBHNgNT
+vbmpLURwrG4x4qkySG+Kx9kIxLDo7A8DOaOmO49B+kc7IWN33dBLDGLhI9QGJT4v
+BIZiyHL40YDbQTaCCqUQRJpttlHXNYxLC9wN1gr+vQZahYAD3Sw6ObrOLxLvuuYm
+CMRAH/X6rlqTMBDW5xWZMa8d0kvoOziAZFi87H/cwWvOipkNFpKDI0gLmqPpkJy1
+DHYGhWs+/JHug4F67khfUBKMEy0cfQ3oQhAFoggF3Mdg3X87TjmJxIxBYLkOE7st
+2X8MT7e7oiDCtWFDx74ph4jatWDi9+IRbvJxx6EPOvjzNsHhueNnFQLy0WXo6lBr
+ALMxQrkBDQRXNhgAAQgAppSk9/BgbnwnH95zODVI79NDitd2+w0JQs8tZtGIzM+y
+BZedp+dLxO2jcKJAMyIFPTZTNNDZqTS+ZvdnY2w2Wu/k81fNV8/r3Dh9iUGoYh33
+R2CWha8vNPPRI+7ji4FL6UTI7o8ZO2HofMsnKmRRLwEtOEgX7OPVUzFW1smjtwr3
+tTpwjt9O8xlRN6QZkiB040DJJw30hK7TWeSkjCLIqqZsaDtkS8pqrGHMpbUIbstW
+RLZWNxE4tvIwSyMm44KxhvndmXh3AMSwTfx8oP+PeVXK4isHTjf8oDCjKvX1xOgB
+Ui3eAMGvDVodFBzavlSmCnXrniS/LLywgLT7Hl2iLQARAQABiQEfBBgBAgAJBQJX
+NhgAAhsMAAoJEEJ0TMHpOxEqA88H/j7BDjN2kNsIakNqRmhgcBO+9uHDvbT+gGID
+I6/vqvwv2wNwWZRNxhutg43GS+oOGLfkAguw29nLnrjSpO4h2G+bTvi3Kh9r/Gwo
+66q0b3z7UkcUHcTuvMiSRfdsLkXBq17PHj5PfjUh6NZoNTLXsnm/Oe+Uv7mf9N65
+cSK3fVE03Bafx1bDRSF74IT6nPU8vltvQ3KarVrgVOQ1FZ4Cg2V8UySzDEn+qnwi
+nW+cnyf7kJMHM9IG6le00zrjxM8u1zCVqWd+jcHctzI1fyFWuPz9tfS0487c7eED
++pMvKdFt4wLt/oJZ3CVfW5K1/7gqKvJtTdd2eR66+GUkCsLRRiI=3D
+=3Dd0tt
+-----END PGP PUBLIC KEY BLOCK-----
+
+--------------060602080801030300060709--
+
+--mkFTopIt55oPvv46QpMP9OU0pMNp7sXfE--
+
+--nDA93uUQ42mccim4cAGPcOsKn6Axg5M5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJXSDmBAAoJEEJ0TMHpOxEqcU8H/iuoPjGa1uMDwA9vYqM05DPt
++alduAdyHNNC+FK53Dqyu7q2+KRCe38DTFUq2r22rck0vIFb7VG3D3vAxitfXlIf
+nzoPOkzYcbA82oI+E0wujo8EupcwgpS19S+P/15Sf2gABVnSyF+exjTxh7NEXYii
+iHQY9zb1v8eRmYpMbKH7WN4Rh+K0SgfWgjVO1qMdmfT06XBt1ZMzBqVcvjAGq7av
+REUp9epKKRFAcH53OraeIiLOtuvc15q1oxGP12tuTf3yXI+hWGnnMDqoe8FNZ6jz
+V6NDGyPS4VrJEY5SjhX1fIkye0Wnvy2PVYWYV5O8YK1Zee+YtTR6/LbQf9kyIEA=
+=dSWP
+-----END PGP SIGNATURE-----
+
+--nDA93uUQ42mccim4cAGPcOsKn6Axg5M5J--

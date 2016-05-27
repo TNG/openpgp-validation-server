@@ -229,3 +229,22 @@ func findFirstText(entity *MimeEntity) string {
 	}
 	return ""
 }
+
+// FindAttachment returns the first attachment of the given mimeType or nil if none is found.
+func (entity *MimeEntity) FindAttachment(mimeType string) []byte {
+	if entity.Attachment != nil {
+		contentType, _ := getMimeMediaTypeFromHeader(entity.Header, "Content-Type", "")
+		if contentType.Value == mimeType {
+			return entity.Attachment
+		}
+	}
+	if entity.Parts != nil {
+		for _, part := range entity.Parts {
+			attachment := part.FindAttachment(mimeType)
+			if attachment != nil {
+				return attachment
+			}
+		}
+	}
+	return nil
+}

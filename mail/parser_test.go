@@ -294,3 +294,23 @@ func TestMultipartSigned(t *testing.T) {
 		t.Error("Valid signature not detected")
 	}
 }
+
+func TestFindAttachment(t *testing.T) {
+	partHeader := map[string][]string{
+		"Content-Type":        {"application/pgp-keys"},
+		"Content-Disposition": {"attachment; filename=\"signature.asc\""},
+	}
+	mailString := createMail().
+		withContentType("multipart/mixed;boundary=\"frontier\"").
+		withMultipartWithHeader("frontier", partHeader, "mypublickey").
+		withFinalMultipartBoundary("frontier").
+		build()
+	mail, err := parseMailFromString(mailString)
+	if err != nil {
+		t.Error("Error while parsing a mail:", err)
+	}
+	attachment := string(mail.FindAttachment("application/pgp-keys"))
+	if attachment != "mypublickey" {
+		t.Error("Expected to find attachment 'mypublickey', got", attachment)
+	}
+}

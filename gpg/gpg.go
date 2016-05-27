@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
 )
 
 // GPG contains the data necessary to perform our cryptographical actions.
@@ -66,4 +67,37 @@ func (gpg *GPG) SignUserID(signedEMail string, r io.Reader, w io.Writer) error {
 // SignMessage signs message and writes the armored signature to w.
 func (gpg *GPG) SignMessage(message io.Reader, w io.Writer) error {
 	return openpgp.ArmoredDetachSign(w, gpg.serverEntity, message, nil)
+}
+
+type encodeEncryptStream struct {
+	encryptStream, armorStream io.WriteCloser
+}
+
+func (s *encodeEncryptStream) Write(p []byte) (n int, err error) {
+	return s.encryptStream.Write(p)
+}
+
+func (s *encodeEncryptStream) Close() error {
+	err := s.encryptStream.Close()
+	if err != nil {
+		return err
+	}
+	return s.armorStream.Close()
+}
+
+// EncryptAndSign encrypts and signs the given message and writes the armored signature to w.
+func (gpg *GPG) EncryptAndSign(ciphertext io.Writer, recipientKey io.Reader) (plaintext io.WriteCloser, err error) {
+	clientEntity, err := readEntity(recipientKey, true)
+	if err != nil {
+		return nil, err
+	}
+	armorStream, err := armor.Encode(ciphertext, "PGP MESSAGE", map[string]string{"Version": "GnuPG v2"})
+	if err != nil {
+		return nil, err
+	}
+	encryptStream, err := openpgp.Encrypt(armorStream, []*openpgp.Entity{clientEntity}, gpg.serverEntity, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &encodeEncryptStream{encryptStream, armorStream}, nil
 }

@@ -106,7 +106,7 @@ func (gpg *GPG) EncryptMessage(output io.Writer, recipientKey io.Reader) (plaint
 	if err != nil {
 		return nil, err
 	}
-	armorStream, err := armor.Encode(output, "PGP MESSAGE", map[string]string{"Version": "GnuPG v2"})
+	armorStream, err := armor.Encode(output, "PGP MESSAGE", nil)
 	if err != nil {
 		return nil, err
 	}

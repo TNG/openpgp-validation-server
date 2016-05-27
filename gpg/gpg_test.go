@@ -167,18 +167,17 @@ func TestGPGCheckMessageSignature(t *testing.T) {
 
 func TestGPGEncryptMessage(t *testing.T) {
 	gpg := setupGPG(t)
-	assert.NotNil(t, gpg)
 
 	cipherTextBuffer := new(bytes.Buffer)
 	recipientKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 
 	writeCloser, err := gpg.EncryptMessage(cipherTextBuffer, recipientKeyFile)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, writeCloser)
 	_, err = writeCloser.Write(testMessageBytes)
-	assert.Nil(t, err)
-	assert.Nil(t, writeCloser.Close())
+	assert.NoError(t, err)
+	assert.NoError(t, writeCloser.Close())
 	require.NoError(t, err, "Encryption failed")
 
 	clientEntity := readEntityFromFile(asciiKeyFileClientSecret, true)
@@ -189,7 +188,7 @@ func TestGPGEncryptMessage(t *testing.T) {
 	keyRing := openpgp.EntityList([]*openpgp.Entity{clientEntity, serverPublicEntity})
 
 	block, err := armor.Decode(cipherTextBuffer)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	md, err := openpgp.ReadMessage(block.Body, keyRing, nil, nil)
 	require.NoError(t, err, "Decryption failed")
 	assert.True(t, md.IsEncrypted, "Encrypted message has not actually been encrypted")
@@ -198,7 +197,7 @@ func TestGPGEncryptMessage(t *testing.T) {
 	decryptedMessageBytes, err := ioutil.ReadAll(md.UnverifiedBody)
 	require.NoError(t, err, "Reading decrypted text failed")
 	assert.Equal(t, string(testMessageBytes), string(decryptedMessageBytes), "Decrypted text does not match")
-	if !assert.Nil(t, md.SignatureError, "Validating signature failed") {
+	if !assert.NoError(t, md.SignatureError, "Validating signature failed") {
 		t.Log("Signature error:", md.SignatureError)
 	}
 	assert.Equal(t, gpg.serverEntity.PrimaryKey.KeyId, md.SignedByKeyId, "Message signed by wrong key")

@@ -11,9 +11,9 @@ func TestEmptyMultipartWriter(t *testing.T) {
 	assert := assert.New(t)
 	buf := bytes.NewBuffer([]byte{})
 	mpw := NewEncodingMultipartWriter(buf, "mixed", "", nil)
-	assert.Nil(mpw.Close())
+	assert.NoError(mpw.Close())
 	entity, err := ParseMail(buf) // TODO: Check contents of entity
-	assert.Nil(err)
+	assert.NoError(err)
 	log.Println(entity)
 }
 
@@ -23,9 +23,9 @@ func TestExtraHeader(t *testing.T) {
 	mpw := NewEncodingMultipartWriter(buf, "mixed", "", map[string]string{
 		"X-Header": "extra",
 	})
-	assert.Nil(mpw.Close())
+	assert.NoError(mpw.Close())
 	entity, err := ParseMail(buf) // TODO: Check contents of entity
-	assert.Nil(err)
+	assert.NoError(err)
 	log.Println(entity)
 }
 
@@ -35,21 +35,21 @@ func TestMultiPart(t *testing.T) {
 	mpw := NewEncodingMultipartWriter(buf, "mixed", "", map[string]string{
 		"X-Header": "extra",
 	})
-	assert.Nil(mpw.WritePlainText("This is text/plain\nWith newlines."))
-	assert.Nil(mpw.WritePGPMIMEVersion())
+	assert.NoError(mpw.WritePlainText("This is text/plain\nWith newlines."))
+	assert.NoError(mpw.WritePGPMIMEVersion())
 
 	writer, err := mpw.WriteInlineFile("test.txt", "text/plain", "Test file")
-	assert.Nil(err)
+	assert.NoError(err)
 	_, err = writer.Write([]byte("Content of test file"))
-	assert.Nil(err)
+	assert.NoError(err)
 
 	writer, err = mpw.WriteAttachedFile("attached-test.txt", "text/plain", "Attached Test file")
-	assert.Nil(err)
+	assert.NoError(err)
 	_, err = writer.Write([]byte("Content of attached test file"))
-	assert.Nil(err)
+	assert.NoError(err)
 
-	assert.Nil(mpw.Close())
+	assert.NoError(mpw.Close())
 	entity, err := ParseMail(buf) // TODO: Check contents of entity
-	assert.Nil(err)
+	assert.NoError(err)
 	log.Println(entity)
 }

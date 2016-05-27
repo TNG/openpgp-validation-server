@@ -73,7 +73,7 @@ func TestGPGSignUserIDWithCorrectEmail(t *testing.T) {
 	clientPublicKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 	clientPublicKey, err := ReadKey(clientPublicKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	buffer := new(bytes.Buffer)
 	err = gpg.SignUserID("test-gpg-validation@client.local", clientPublicKey, buffer)
@@ -89,7 +89,7 @@ func TestGPGSignUserIDWithIncorrectEmail(t *testing.T) {
 	clientPublicKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 	clientPublicKey, err := ReadKey(clientPublicKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	buffer := new(bytes.Buffer)
 	err = gpg.SignUserID("impostor@faux.fake", clientPublicKey, buffer)
@@ -130,7 +130,7 @@ func checkMessageSignatureTest(t *testing.T, gpg *GPG, message, signature []byte
 	signerKeyFile, cleanup := utils.Open(t, checkedSignerKeyFilePath)
 	defer cleanup()
 	signerKey, err := ReadKey(signerKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	messageReader := bytes.NewReader(message)
 	signatureReader := bytes.NewReader(signature)
@@ -174,7 +174,7 @@ func TestGPGEncryptMessage(t *testing.T) {
 	recipientKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 	recipientKey, err := ReadKey(recipientKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	writeCloser, err := gpg.EncryptMessage(cipherTextBuffer, recipientKey)
 	assert.NoError(t, err)
@@ -250,7 +250,7 @@ func TestGPGDecryptSignedMessage(t *testing.T) {
 	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 	senderKey, err := ReadKey(senderKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = gpg.DecryptSignedMessage(bytes.NewBuffer(cipherTextBuffer.Bytes()), decryptedTextBuffer, senderKey)
 	require.NoError(t, err, "Decryption failed")
@@ -265,7 +265,7 @@ func decryptSignedMessageSignatureErrorTest(t *testing.T, signed bool, senderKey
 	senderKeyFile, cleanup := utils.Open(t, senderKeyFilePath)
 	defer cleanup()
 	senderKey, err := ReadKey(senderKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return gpg.DecryptSignedMessage(cipherTextBuffer, decryptedTextBuffer, senderKey)
 }
@@ -291,7 +291,7 @@ func TestGPGDecryptSignedMessageWithEmptyMessage(t *testing.T) {
 	senderKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 	senderKey, err := ReadKey(senderKeyFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = gpg.DecryptSignedMessage(new(bytes.Buffer), decryptedTextBuffer, senderKey)
 	if assert.Error(t, err, "Decrypting empty message succeeded") {

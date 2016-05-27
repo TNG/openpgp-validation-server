@@ -6,12 +6,14 @@ import (
 	"testing"
 )
 
+var parser = Parser{nil}
+
 func TestEmptyMultipartWriter(t *testing.T) {
 	assert := assert.New(t)
 	buf := bytes.NewBuffer([]byte{})
 	mpw := NewEncodingMultipartWriter(buf, "mixed", "", nil)
 	assert.NoError(mpw.Close())
-	entity, err := ParseMail(buf) // TODO: Check contents of entity
+	entity, err := parser.ParseMail(buf) // TODO: Check contents of entity
 	assert.NoError(err)
 	t.Log(entity)
 }
@@ -23,7 +25,7 @@ func TestExtraHeader(t *testing.T) {
 		"X-Header": "extra",
 	})
 	assert.NoError(mpw.Close())
-	entity, err := ParseMail(buf) // TODO: Check contents of entity
+	entity, err := parser.ParseMail(buf) // TODO: Check contents of entity
 	assert.NoError(err)
 	t.Log(entity)
 }
@@ -48,7 +50,7 @@ func TestMultiPart(t *testing.T) {
 	assert.NoError(err)
 
 	assert.NoError(mpw.Close())
-	entity, err := ParseMail(buf) // TODO: Check contents of entity
+	entity, err := parser.ParseMail(buf) // TODO: Check contents of entity
 	assert.NoError(err)
 	t.Log(entity)
 }

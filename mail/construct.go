@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"io"
 	"time"
+
+	"github.com/TNG/gpg-validation-server/gpg"
 )
 
 // MessageEncrypter is a struct able to sign a message and encrypt it for the recipient key
 type MessageEncrypter interface {
-	EncryptMessage(output io.Writer, recipientKey io.Reader) (plaintext io.WriteCloser, err error)
+	EncryptMessage(output io.Writer, recipientKey gpg.Key) (plaintext io.WriteCloser, err error)
 }
 
 // OutgoingMail describes the contents of the mail to be sent (WIP)
 type OutgoingMail struct {
 	Message        string
 	RecipientEmail string
-	RecipientKey   []byte
+	RecipientKey   gpg.Key
 	Attachment     []byte
 	GPG            MessageEncrypter
 }
@@ -41,7 +43,7 @@ func (m OutgoingMail) Bytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	plaintext, err := m.GPG.EncryptMessage(partWriter, bytes.NewBuffer(m.RecipientKey))
+	plaintext, err := m.GPG.EncryptMessage(partWriter, m.RecipientKey)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +57,7 @@ func (m OutgoingMail) Bytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = encryptedKeyWriter.Write(m.RecipientKey)
+	_, err = encryptedKeyWriter.Write(m.Attachment)
 	if err != nil {
 		return nil, err
 	}

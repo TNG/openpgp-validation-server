@@ -32,7 +32,7 @@ func TestConstructCryptSignEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := OutgoingMail{"Content-Type: text/plain\n\nIt works!", "test-gpg-validation@client.local", clientKey, []byte{}, gpg}
+	m := OutgoingMail{"It works!", "test-gpg-validation@client.local", clientKey, []byte{}, gpg}
 	b := m.Bytes()
 	log.Print(string(b))
 }

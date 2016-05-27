@@ -33,7 +33,7 @@ func processMailAction(c *cli.Context) error {
 		defer func() { _ = input.Close() }()
 	}
 
-	parser := mail.Parser{Gpg:nil}
+	parser := mail.Parser{Gpg: nil}
 	entity, _ := parser.ParseMail(input)
 	log.Println(entity)
 

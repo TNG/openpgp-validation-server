@@ -84,7 +84,7 @@ func (gpg *GPG) CheckMessageSignature(message io.Reader, signature io.Reader, ch
 }
 
 // EncryptMessage encrypts a message using the server's entity for the given recipient.
-func (gpg *GPG) EncryptMessage(message io.Reader, recipientKey io.Reader, output io.Writer) error {
+func (gpg *GPG) EncryptMessage(message io.Reader, output io.Writer, recipientKey io.Reader) error {
 	recipient, err := readEntityMaybeArmored(recipientKey)
 	if err != nil {
 		return err

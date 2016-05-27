@@ -187,7 +187,7 @@ func TestGPGEncryptMessage(t *testing.T) {
 	recipientKeyFile, cleanup := utils.Open(t, asciiKeyFileClient)
 	defer cleanup()
 
-	err := gpg.EncryptMessage(message, recipientKeyFile, cipherTextBuffer)
+	err := gpg.EncryptMessage(message, cipherTextBuffer, recipientKeyFile)
 	if err != nil {
 		t.Fatal("Encryption failed:", err)
 	}
@@ -246,7 +246,7 @@ func TestGPGEncryptMessageWithInvalidRecipient(t *testing.T) {
 	cipherTextBuffer := new(bytes.Buffer)
 	invalidRecipient := new(bytes.Buffer)
 
-	err := gpg.EncryptMessage(message, invalidRecipient, cipherTextBuffer)
+	err := gpg.EncryptMessage(message, cipherTextBuffer, invalidRecipient)
 	if err != io.EOF {
 		t.Fatal("Unexpected error for encrypting message to empty recipient key file:", err)
 	}

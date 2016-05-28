@@ -84,7 +84,7 @@ func (builder *MultipartBuilder) build() string {
 
 func TestParseHeaders(t *testing.T) {
 	mail, err := parseMailFromFile("plaintext.eml")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 8, len(mail.Header))
 	assert.Equal(t, "Basic test", mail.Header["Subject"][0])
 	assert.Equal(t, "text/plain", mail.Header["Content-Type"][0])
@@ -92,13 +92,11 @@ func TestParseHeaders(t *testing.T) {
 
 func TestParseEmptyMail(t *testing.T) {
 	mail, err := parseMailFromString("\r\n")
-	if err != nil {
-		t.Error("Error while parsing mail", err)
-	}
-	if len(mail.Parts) > 0 || len(mail.Header) > 0 || mail.Attachment != nil {
-		t.Error("Expected an empty mail.")
-		fmt.Printf("%d %d\n", len(mail.Parts), len(mail.Parts[0].Text))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(mail.Parts))
+	assert.Equal(t, 0, len(mail.Header))
+	assert.False(t, mail.IsAttachment)
+	assert.False(t, mail.IsSigned)
 }
 
 func TestParseText(t *testing.T) {
@@ -106,8 +104,8 @@ func TestParseText(t *testing.T) {
 	contentType := MimeMediaType{"text/plain", nil}
 	header := textproto.MIMEHeader{}
 	entity, err := parser.parseText(contentType, header, strings.NewReader("Hello world!"))
-	assert.Nil(t, err)
-	assert.Equal(t, "Hello world!", entity.Text)
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello world!", string(entity.Content))
 }
 
 func TestParseTextWithCharset(t *testing.T) {
@@ -115,8 +113,8 @@ func TestParseTextWithCharset(t *testing.T) {
 	contentType := MimeMediaType{"text/plain", map[string]string{"charset": "ISO-8859-1"}}
 	header := textproto.MIMEHeader{}
 	entity, err := parser.parseText(contentType, header, strings.NewReader("\xe0\x20\x63\xf4\x74\xe9"))
-	assert.Nil(t, err)
-	assert.Equal(t, "à côté", entity.Text)
+	assert.NoError(t, err)
+	assert.Equal(t, "à côté", string(entity.Content))
 }
 
 func TestParseMultipart(t *testing.T) {
@@ -129,11 +127,11 @@ func TestParseMultipart(t *testing.T) {
 		withPart("text/plain", "Part2", nil).
 		build()
 	entity, err := parser.parseMultipart(contentType, header, strings.NewReader(text))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 3, len(entity.Parts))
-	assert.Equal(t, "Part0", entity.Parts[0].Text)
-	assert.Equal(t, "Part1", entity.Parts[1].Text)
-	assert.Equal(t, "Part2", entity.Parts[2].Text)
+	assert.Equal(t, "Part0", string(entity.Parts[0].Content))
+	assert.Equal(t, "Part1", string(entity.Parts[1].Content))
+	assert.Equal(t, "Part2", string(entity.Parts[2].Content))
 }
 
 func TestParseMultipartWithoutBoundary(t *testing.T) {
@@ -155,13 +153,13 @@ func TestParseMultipartNested(t *testing.T) {
 		withPart("multipart/mixed; boundary=inner", inner, nil).
 		build()
 	entity, err := parser.parseMultipart(contentType, header, strings.NewReader(text))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(entity.Parts))
 	innerPart := entity.Parts[0]
 	assert.Equal(t, 1, len(innerPart.Header))
 	assert.Equal(t, "multipart/mixed; boundary=inner", innerPart.Header.Get("Content-Type"))
 	assert.Equal(t, 1, len(innerPart.Parts))
-	assert.Equal(t, "Nested text", innerPart.Parts[0].Text)
+	assert.Equal(t, "Nested text", string(innerPart.Parts[0].Content))
 }
 
 func TestParseMultipartWithQuotedPrintable(t *testing.T) {
@@ -173,8 +171,8 @@ func TestParseMultipartWithQuotedPrintable(t *testing.T) {
 	innerHeader.Set("Content-Transfer-Encoding", "quoted-printable")
 	text := createMultipart("frontier").withPart("", "B=E4renf=FC=DFe", innerHeader).build()
 	entity, err := parser.parseMultipart(contentType, header, strings.NewReader(text))
-	assert.Nil(t, err)
-	assert.Equal(t, "Bärenfüße", entity.Parts[0].Text)
+	assert.NoError(t, err)
+	assert.Equal(t, "Bärenfüße", string(entity.Parts[0].Content))
 }
 
 type MockGpg struct {
@@ -202,7 +200,7 @@ func TestParseMultipartSigned(t *testing.T) {
 	parser := Parser{mockGpg}
 	contentType := MimeMediaType{"multipart/signed", map[string]string{"boundary": "frontier", "micalg": "pgp-sha1"}}
 	mail, err := parser.parseMultipartSigned(contentType, textproto.MIMEHeader{}, strings.NewReader(text))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, mail.IsSigned)
 	assert.True(t, mockGpg.checked)
 	assert.Equal(t, 2, len(mail.Parts))
@@ -210,25 +208,23 @@ func TestParseMultipartSigned(t *testing.T) {
 
 func TestPlainText(t *testing.T) {
 	mail, err := parseMailFromFile("plaintext.eml")
-	if err != nil {
-		t.Error(err)
-	}
-	assert.Equal(t, "This is some nice plain text!\r\n", mail.Text)
+	assert.NoError(t, err)
+	assert.Equal(t, "This is some nice plain text!\r\n", string(mail.Content))
 }
 
-/*func TestMultipartSigned(t *testing.T) {
+func TestMultipartSigned(t *testing.T) {
 	signedPart := "Content-Type: text/plain\r\n\r\nHello this is me!\r\n\r\n"
 	mockGpg := &MockGpg{t, "pgp-sha1", signedPart, "SIGNATURE", false}
 	mail, err := parseMailFromFileWithGpg("signed_multipart_simple.eml", mockGpg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, mockGpg.checked)
 	assert.Equal(t, 2, len(mail.Parts))
 	assert.True(t, mail.IsSigned)
-}*/
+}
 
 func TestFindAttachment(t *testing.T) {
 	mail, err := parseMailFromFile("attachment.eml")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	data := mail.FindAttachment("application/octet-stream")
 	assert.Equal(t, "This is a PDF file.", string(data))
 	data = mail.FindAttachment("image/png")

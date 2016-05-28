@@ -17,11 +17,11 @@ import (
 
 // MimeEntity describes a multi-part MIME encoded message
 type MimeEntity struct {
-	Header     textproto.MIMEHeader
-	Text       string
-	Parts      []MimeEntity
-	Attachment []byte
-	IsSigned   bool
+	Header       textproto.MIMEHeader
+	Content      []byte
+	Parts        []MimeEntity
+	IsAttachment bool
+	IsSigned     bool
 }
 
 // MimeMediaType describes a Media Type with associated parameters
@@ -106,25 +106,25 @@ func (parser *Parser) parseEntity(header textproto.MIMEHeader, body io.Reader) (
 
 func (parser *Parser) parseText(contentType MimeMediaType, header textproto.MIMEHeader,
 	body io.Reader) (*MimeEntity, error) {
-	charsetLabel, ok := contentType.Params["charset"]
 	var err error
+	charsetLabel, ok := contentType.Params["charset"]
 	if ok {
 		body, err = charset.NewReaderLabel(charsetLabel, body)
 		if err != nil {
 			return nil, err
 		}
 	}
-	text, err := ioutil.ReadAll(body)
+	content, err := ioutil.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MimeEntity{
-		Header:     header,
-		Text:       string(text),
-		Parts:      nil,
-		Attachment: nil,
-		IsSigned:   false}, nil
+		Header:       header,
+		Content:      content,
+		Parts:        nil,
+		IsAttachment: false,
+		IsSigned:     false}, nil
 }
 
 func (parser *Parser) parseMultipart(contentType MimeMediaType, header textproto.MIMEHeader,
@@ -134,11 +134,11 @@ func (parser *Parser) parseMultipart(contentType MimeMediaType, header textproto
 		return nil, errors.New("multipart mail without boundary")
 	}
 	result := MimeEntity{
-		Header:     header,
-		Text:       "",
-		Parts:      make([]MimeEntity, 0),
-		Attachment: nil,
-		IsSigned:   false}
+		Header:       header,
+		Content:      nil,
+		Parts:        make([]MimeEntity, 0),
+		IsAttachment: false,
+		IsSigned:     false}
 
 	reader := multipart.NewReader(body, boundary)
 	for {
@@ -182,7 +182,7 @@ func (parser *Parser) parseMultipartSigned(contentType MimeMediaType, header tex
 
 	boundary, _ := contentType.Params["boundary"]
 	signedPart := parser.findSignedPart(buffer.Bytes(), boundary)
-	signature := []byte(result.Parts[1].Text)
+	signature := result.Parts[1].Content
 	result.IsSigned = parser.Gpg.CheckSignature(micAlgorithm, signedPart, signature)
 	return result, nil
 }
@@ -211,32 +211,19 @@ func (parser *Parser) createAttachment(contentDisposition MimeMediaType, header 
 		return nil, err
 	}
 	return &MimeEntity{
-		Header:     header,
-		Text:       "",
-		Parts:      nil,
-		Attachment: data,
-		IsSigned:   false}, nil
-}
-
-func findFirstText(entity *MimeEntity) string {
-	if len(entity.Text) > 0 {
-		return entity.Text
-	}
-	for _, part := range entity.Parts {
-		text := findFirstText(&part)
-		if len(text) > 0 {
-			return text
-		}
-	}
-	return ""
+		Header:       header,
+		Content:      data,
+		Parts:        nil,
+		IsAttachment: true,
+		IsSigned:     false}, nil
 }
 
 // FindAttachment returns the first attachment of the given mimeType or nil if none is found.
 func (entity *MimeEntity) FindAttachment(mimeType string) []byte {
-	if entity.Attachment != nil {
+	if entity.IsAttachment {
 		contentType, _ := getMimeMediaTypeFromHeader(entity.Header, "Content-Type", "")
 		if contentType.Value == mimeType {
-			return entity.Attachment
+			return entity.Content
 		}
 	}
 	if entity.Parts != nil {

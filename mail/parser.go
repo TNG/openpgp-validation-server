@@ -67,16 +67,16 @@ func (parser *Parser) ParseMail(reader io.Reader) (*MimeEntity, error) {
 }
 
 func getMimeMediaTypeFromHeader(
-	header textproto.MIMEHeader, key string, defaultValue string) (*MimeMediaType, error) {
+	header textproto.MIMEHeader, key string, defaultValue string) (MimeMediaType, error) {
 	values := header.Get(key)
 	if len(values) == 0 {
-		return &MimeMediaType{defaultValue, make(map[string]string)}, nil
+		return MimeMediaType{defaultValue, make(map[string]string)}, nil
 	}
 	value, params, err := mime.ParseMediaType(values)
 	if err != nil {
-		return nil, err
+		return MimeMediaType{}, err
 	}
-	return &MimeMediaType{value, params}, nil
+	return MimeMediaType{value, params}, nil
 }
 
 func (parser *Parser) parseEntity(header textproto.MIMEHeader, body io.Reader) (*MimeEntity, error) {
@@ -104,7 +104,7 @@ func (parser *Parser) parseEntity(header textproto.MIMEHeader, body io.Reader) (
 	return nil, nil
 }
 
-func (parser *Parser) parseText(contentType *MimeMediaType, header textproto.MIMEHeader,
+func (parser *Parser) parseText(contentType MimeMediaType, header textproto.MIMEHeader,
 	body io.Reader) (*MimeEntity, error) {
 	charsetLabel, ok := contentType.Params["charset"]
 	var err error
@@ -127,7 +127,7 @@ func (parser *Parser) parseText(contentType *MimeMediaType, header textproto.MIM
 		IsSigned:   false}, nil
 }
 
-func (parser *Parser) parseMultipart(contentType *MimeMediaType, header textproto.MIMEHeader,
+func (parser *Parser) parseMultipart(contentType MimeMediaType, header textproto.MIMEHeader,
 	body io.Reader) (*MimeEntity, error) {
 	boundary, ok := contentType.Params["boundary"]
 	if !ok {
@@ -159,7 +159,7 @@ func (parser *Parser) parseMultipart(contentType *MimeMediaType, header textprot
 	}
 }
 
-func (parser *Parser) parseMultipartSigned(contentType *MimeMediaType, header textproto.MIMEHeader,
+func (parser *Parser) parseMultipartSigned(contentType MimeMediaType, header textproto.MIMEHeader,
 	body io.Reader) (*MimeEntity, error) {
 	micAlgorithm, ok := contentType.Params["micalg"]
 	if !ok {
@@ -174,8 +174,9 @@ func (parser *Parser) parseMultipartSigned(contentType *MimeMediaType, header te
 	if len(result.Parts) != 2 {
 		return nil, errors.New("multipart/signed mail must contain exactly two parts")
 	}
-	signatureHeader := result.Parts[1].getHeader("Content-Type", "")
-	if signatureHeader != "application/pgp-signature" {
+	// Because we already successfully parsed the multipart content, no error can be returned here.
+	signatureHeader, _ := getMimeMediaTypeFromHeader(result.Parts[1].Header, "Content-Type", "")
+	if signatureHeader.Value != "application/pgp-signature" {
 		return nil, fmt.Errorf("Found invalid signature content-type '%s'.", signatureHeader)
 	}
 
@@ -203,7 +204,7 @@ func (parser *Parser) findSignedPart(data []byte, boundary string) []byte {
 	return data[startOfSignedPart:endOfSignedPart]
 }
 
-func (parser *Parser) createAttachment(contentDisposition *MimeMediaType, header textproto.MIMEHeader,
+func (parser *Parser) createAttachment(contentDisposition MimeMediaType, header textproto.MIMEHeader,
 	body io.Reader) (*MimeEntity, error) {
 	data, err := ioutil.ReadAll(body)
 	if err != nil {

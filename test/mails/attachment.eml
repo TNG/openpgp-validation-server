@@ -1,0 +1,20 @@
+Subject: Attachment test
+Date: Fri, 13 May 2016 13:00:00 -0700
+From: Tests <server@server.local>
+To: TNG/gpg-validation-server <gpg-validation-server@noreply.github.com>
+Content-Type: multipart/mixed;
+	boundary="----=_Part_17320_1107699035"
+
+------=_Part_17320_1107699035
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+In the attachment I send you a PDF file.
+
+------=_Part_17320_1107699035
+Content-Type: application/octet-stream; name=file.pdf
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=file.pdf
+
+This is a PDF file.
+------=_Part_17320_1107699035--

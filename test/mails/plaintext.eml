@@ -1,11 +1,10 @@
+Subject: Basic test
 Date: Fri, 13 May 2016 13:00:00 -0700
 From: Tests <server@server.local>
 To: TNG/gpg-validation-server <gpg-validation-server@noreply.github.com>
 Cc:
-Subject: What a subject
 Mime-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 
 This is some nice plain text!

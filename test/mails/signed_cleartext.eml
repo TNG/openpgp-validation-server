@@ -1,0 +1,17 @@
+Subject: Test signed with cleartext
+Date: Fri, 13 May 2016 13:00:00 -0700
+From: Tests <server@server.local>
+To: TNG/gpg-validation-server <gpg-validation-server@noreply.github.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Hallo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+SIGNATURE
+-----END PGP SIGNATURE-----

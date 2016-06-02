@@ -82,6 +82,18 @@ func (builder *MultipartBuilder) build() string {
 	return builder.Buffer.String()
 }
 
+func TestGetMimeMediaTypeFromHeader(t *testing.T) {
+	header := textproto.MIMEHeader{"Content-Type": {"foo; param=bar", "stuff"}}
+	mediaType, err := getMimeMediaTypeFromHeader(header, "Content-Type", "")
+	assert.NoError(t, err)
+	assert.Equal(t, "foo", mediaType.Value)
+	assert.Equal(t, 1, len(mediaType.Params))
+	assert.Equal(t, "bar", mediaType.Params["param"])
+	mediaType, err = getMimeMediaTypeFromHeader(header, "key", "default")
+	assert.NoError(t, err)
+	assert.Equal(t, "default", mediaType.Value)
+}
+
 func TestParseHeaders(t *testing.T) {
 	mail, err := parseMailFromFile("plaintext.eml")
 	assert.NoError(t, err)
@@ -115,6 +127,15 @@ func TestParseTextWithCharset(t *testing.T) {
 	entity, err := parser.parseText(contentType, header, strings.NewReader("\xe0\x20\x63\xf4\x74\xe9"))
 	assert.NoError(t, err)
 	assert.Equal(t, "à côté", string(entity.Content))
+}
+
+func TestParseTextWithInvalidEncoding(t *testing.T) {
+	parser := &Parser{Gpg: nil}
+	contentType := MimeMediaType{"text/plain", map[string]string{"charset": "utf-8"}}
+	header := textproto.MIMEHeader{}
+	entity, err := parser.parseText(contentType, header, bytes.NewReader([]byte{0xC0}))
+	assert.Nil(t, err)
+	assert.Equal(t, "\uFFFD", string(entity.Content))
 }
 
 func TestParseMultipart(t *testing.T) {
@@ -160,6 +181,19 @@ func TestParseMultipartNested(t *testing.T) {
 	assert.Equal(t, "multipart/mixed; boundary=inner", innerPart.Header.Get("Content-Type"))
 	assert.Equal(t, 1, len(innerPart.Parts))
 	assert.Equal(t, "Nested text", string(innerPart.Parts[0].Content))
+}
+
+func TestParseMultipartInvalid(t *testing.T) {
+	parser := &Parser{Gpg: nil}
+	contentType := MimeMediaType{"multipart/mixed", map[string]string{"boundary": "frontier"}}
+	header := textproto.MIMEHeader{}
+	text := createMultipart("frontier").
+		withPart("text/plain", "Hello", nil).
+		build()
+	text = text[:len(text)-4] // Remove final boundary end '--' (and \r\n).
+	entity, err := parser.parseMultipart(contentType, header, strings.NewReader(text))
+	assert.Nil(t, entity)
+	assert.NotNil(t, err)
 }
 
 func TestParseMultipartWithQuotedPrintable(t *testing.T) {

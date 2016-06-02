@@ -3,9 +3,8 @@ language: go
 go:
   - 1.6
 
-before_install:
-  - go get -u github.com/alecthomas/gometalinter
-  - gometalinter --install --update
+install:
+  - ./install.sh
 
 script:
   - ./enforce_gofmt.sh

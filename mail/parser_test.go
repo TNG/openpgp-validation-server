@@ -32,6 +32,7 @@ func loadTestMail(fileName string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Do not rely on correct line endings in test files, ensure them here.
 	regex := regexp.MustCompile("\r?\n")
 	return regex.ReplaceAll(data, []byte("\r\n")), nil
 }

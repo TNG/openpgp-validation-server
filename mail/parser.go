@@ -174,8 +174,11 @@ func (parser *Parser) parseMultipartSigned(contentType MimeMediaType, header tex
 	if len(result.Parts) != 2 {
 		return nil, errors.New("multipart/signed mail must contain exactly two parts")
 	}
-	// Because we already successfully parsed the multipart content, no error can be returned here.
-	signatureHeader, _ := getMimeMediaTypeFromHeader(result.Parts[1].Header, "Content-Type", "")
+	signatureHeader, err := getMimeMediaTypeFromHeader(result.Parts[1].Header, "Content-Type", "")
+	if err != nil {
+		// Because we already successfully parsed the multipart content, no error should occur here.
+		panic("Unreachable")
+	}
 	if signatureHeader.Value != "application/pgp-signature" {
 		return nil, fmt.Errorf("Found invalid signature content-type '%s'.", signatureHeader)
 	}

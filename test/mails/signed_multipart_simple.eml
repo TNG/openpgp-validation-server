@@ -1,0 +1,23 @@
+Subject: Test multipart/signed
+Date: Fri, 13 May 2016 13:00:00 -0700
+From: Tests <server@server.local>
+To: TNG/gpg-validation-server <gpg-validation-server@noreply.github.com>
+Cc:
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="pJBjdLDsOsGjdjJC766jdBCxKARPiJFep"
+
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--pJBjdLDsOsGjdjJC766jdBCxKARPiJFep
+Content-Type: text/plain
+
+Hello this is me!
+
+--pJBjdLDsOsGjdjJC766jdBCxKARPiJFep
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+SIGNATURE
+--pJBjdLDsOsGjdjJC766jdBCxKARPiJFep--

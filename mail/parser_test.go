@@ -3,51 +3,48 @@ package mail
 import (
 	"bytes"
 	"fmt"
+	"github.com/TNG/gpg-validation-server/test/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/textproto"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
 )
 
-func parseMailFromString(source string) (*MimeEntity, error) {
-	return parseMailFromStringWithGpg(source, nil)
+func parseMailFromString(t *testing.T, source string) *MimeEntity {
+	return parseMailFromStringWithGpg(t, source, nil)
 }
 
-func parseMailFromStringWithGpg(source string, gpg GpgUtility) (*MimeEntity, error) {
+func parseMailFromStringWithGpg(t *testing.T, source string, gpg GpgUtility) *MimeEntity {
 	parser := Parser{gpg}
 	reader := strings.NewReader(source)
-	return parser.ParseMail(reader)
+	entity, err := parser.ParseMail(reader)
+	assert.NoError(t, err, "Unexpected error in ParseMail!")
+	return entity
 }
 
-func loadTestMail(fileName string) ([]byte, error) {
-	input, err := os.Open("../test/mails/" + fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { input.Close() }()
+func loadTestMail(t *testing.T, fileName string) []byte {
+	input, cleanup := utils.Open(t, "../test/mails/"+fileName)
+	defer cleanup()
 	data, err := ioutil.ReadAll(input)
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 	// Do not rely on correct line endings in test files, ensure them here.
 	regex := regexp.MustCompile("\r?\n")
-	return regex.ReplaceAll(data, []byte("\r\n")), nil
+	return regex.ReplaceAll(data, []byte("\r\n"))
 }
 
-func parseMailFromFile(fileName string) (*MimeEntity, error) {
-	return parseMailFromFileWithGpg(fileName, nil)
+func parseMailFromFile(t *testing.T, fileName string) *MimeEntity {
+	return parseMailFromFileWithGpg(t, fileName, nil)
 }
 
-func parseMailFromFileWithGpg(fileName string, gpg GpgUtility) (*MimeEntity, error) {
-	data, err := loadTestMail(fileName)
-	if err != nil {
-		return nil, err
-	}
+func parseMailFromFileWithGpg(t *testing.T, fileName string, gpg GpgUtility) *MimeEntity {
+	data := loadTestMail(t, fileName)
 	parser := Parser{gpg}
-	return parser.ParseMail(bytes.NewReader(data))
+	entity, err := parser.ParseMail(bytes.NewReader(data))
+	assert.NoError(t, err, "Unexpected error in ParseMail!")
+	return entity
 }
 
 type MultipartBuilder struct {
@@ -61,25 +58,25 @@ func createMultipart(boundary string) *MultipartBuilder {
 
 func (builder *MultipartBuilder) withPart(contentType string,
 	text string, header textproto.MIMEHeader) *MultipartBuilder {
-	builder.Buffer.WriteString(fmt.Sprintf("--%s\r\n", builder.Boundary))
+	_, _ = builder.Buffer.WriteString(fmt.Sprintf("--%s\r\n", builder.Boundary))
 	if contentType != "" {
-		builder.Buffer.WriteString(fmt.Sprintf("Content-Type: %s\r\n", contentType))
+		_, _ = builder.Buffer.WriteString(fmt.Sprintf("Content-Type: %s\r\n", contentType))
 	}
 	if header != nil {
 		for key, values := range header {
 			for _, value := range values {
-				builder.Buffer.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
+				_, _ = builder.Buffer.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
 			}
 		}
 	}
-	builder.Buffer.WriteString("\r\n")
-	builder.Buffer.WriteString(text)
-	builder.Buffer.WriteString("\r\n")
+	_, _ = builder.Buffer.WriteString("\r\n")
+	_, _ = builder.Buffer.WriteString(text)
+	_, _ = builder.Buffer.WriteString("\r\n")
 	return builder
 }
 
 func (builder *MultipartBuilder) build() string {
-	builder.Buffer.WriteString(fmt.Sprintf("--%s--\r\n", builder.Boundary))
+	_, _ = builder.Buffer.WriteString(fmt.Sprintf("--%s--\r\n", builder.Boundary))
 	return builder.Buffer.String()
 }
 
@@ -96,16 +93,14 @@ func TestGetMimeMediaTypeFromHeader(t *testing.T) {
 }
 
 func TestParseHeaders(t *testing.T) {
-	mail, err := parseMailFromFile("plaintext.eml")
-	assert.NoError(t, err)
+	mail := parseMailFromFile(t, "plaintext.eml")
 	assert.Equal(t, 8, len(mail.Header))
 	assert.Equal(t, "Basic test", mail.Header["Subject"][0])
 	assert.Equal(t, "text/plain", mail.Header["Content-Type"][0])
 }
 
 func TestParseEmptyMail(t *testing.T) {
-	mail, err := parseMailFromString("\r\n")
-	assert.NoError(t, err)
+	mail := parseMailFromString(t, "\r\n")
 	assert.Equal(t, 0, len(mail.Parts))
 	assert.Equal(t, 0, len(mail.Header))
 	assert.False(t, mail.IsAttachment)
@@ -242,24 +237,21 @@ func TestParseMultipartSigned(t *testing.T) {
 }
 
 func TestPlainText(t *testing.T) {
-	mail, err := parseMailFromFile("plaintext.eml")
-	assert.NoError(t, err)
+	mail := parseMailFromFile(t, "plaintext.eml")
 	assert.Equal(t, "This is some nice plain text!\r\n", string(mail.Content))
 }
 
 func TestMultipartSigned(t *testing.T) {
 	signedPart := "Content-Type: text/plain\r\n\r\nHello this is me!\r\n\r\n"
 	mockGpg := &MockGpg{t, "pgp-sha1", signedPart, "SIGNATURE", false}
-	mail, err := parseMailFromFileWithGpg("signed_multipart_simple.eml", mockGpg)
-	assert.NoError(t, err)
+	mail := parseMailFromFileWithGpg(t, "signed_multipart_simple.eml", mockGpg)
 	assert.True(t, mockGpg.checked)
 	assert.Equal(t, 2, len(mail.Parts))
 	assert.True(t, mail.IsSigned)
 }
 
 func TestFindAttachment(t *testing.T) {
-	mail, err := parseMailFromFile("attachment.eml")
-	assert.NoError(t, err)
+	mail := parseMailFromFile(t, "attachment.eml")
 	data := mail.FindAttachment("application/octet-stream")
 	assert.Equal(t, "This is a PDF file.", string(data))
 	data = mail.FindAttachment("image/png")

@@ -2,6 +2,7 @@
 package utils
 
 import (
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 )
@@ -10,9 +11,7 @@ import (
 func Open(t *testing.T, path string) (file *os.File, cleanup func()) {
 	file, err := os.Open(path)
 
-	if err != nil {
-		t.Fatal("Failed to open file:", path)
-	}
+	require.NoError(t, err, "Failed to open file:", path)
 
 	cleanup = func() {
 		_ = file.Close()

@@ -53,6 +53,9 @@ func processMailAction(c *cli.Context) error {
 	}
 
 	result, err := validator.HandleMail(inputMail, gpgUtil)
+	if err != nil {
+		return fmt.Errorf("Cannot handle mail: %s", err)
+	}
 
 	log.Printf("Mail has valid signature: %v.\n", result.IsSigned())
 

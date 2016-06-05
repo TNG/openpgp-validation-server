@@ -14,8 +14,8 @@ import (
 // Key is a reference to an OpenPGP entity containing some public keys
 type Key *openpgp.Entity
 
-// ReadKey reads a PGP public or private key from the given reader
-func ReadKey(r io.Reader) (Key, error) {
+// readKey reads a PGP public or private key from the given reader
+func readKey(r io.Reader) (Key, error) {
 	return readEntityMaybeArmored(r)
 }
 

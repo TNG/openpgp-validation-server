@@ -30,11 +30,11 @@ type GPG struct {
 }
 
 // NewGPG initializes a GPG object from a buffer containing the server's private key.
-func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
+func NewGPG(serverPrivateKey io.Reader, passphrase string) (*GPG, error) {
 	var err error
 
 	gpg := new(GPG)
-	gpg.serverEntity, err = readEntityMaybeArmored(r)
+	gpg.serverEntity, err = readEntityMaybeArmored(serverPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +45,12 @@ func NewGPG(r io.Reader, passphrase string) (*GPG, error) {
 	}
 
 	return gpg, nil
+}
+
+// ReadKey reads a PGP public or private key from the given reader.
+// This is exposed through
+func (gpg *GPG) ReadKey(r io.Reader) (Key, error) {
+	return readKey(r)
 }
 
 // SignUserID signs the part in the given public key corresponding to the given email and writes the signed public key to w.

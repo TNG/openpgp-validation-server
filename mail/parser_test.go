@@ -3,12 +3,14 @@ package mail
 import (
 	"bytes"
 	"fmt"
+	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/test/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/openpgp"
+	"io"
 	"io/ioutil"
 	"net/textproto"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -30,9 +32,7 @@ func loadTestMail(t *testing.T, fileName string) []byte {
 	defer cleanup()
 	data, err := ioutil.ReadAll(input)
 	require.NoError(t, err)
-	// Do not rely on correct line endings in test files, ensure them here.
-	regex := regexp.MustCompile("\r?\n")
-	return regex.ReplaceAll(data, []byte("\r\n"))
+	return data
 }
 
 func parseMailFromFile(t *testing.T, fileName string) *MimeEntity {
@@ -43,7 +43,7 @@ func parseMailFromFileWithGpg(t *testing.T, fileName string, gpg GpgUtility) *Mi
 	data := loadTestMail(t, fileName)
 	parser := Parser{gpg}
 	entity, err := parser.ParseMail(bytes.NewReader(data))
-	assert.NoError(t, err, "Unexpected error in ParseMail!")
+	require.NoError(t, err, "Unexpected error in ParseMail!")
 	return entity
 }
 
@@ -72,6 +72,13 @@ func (builder *MultipartBuilder) withPart(contentType string,
 	_, _ = builder.Buffer.WriteString("\r\n")
 	_, _ = builder.Buffer.WriteString(text)
 	_, _ = builder.Buffer.WriteString("\r\n")
+	return builder
+}
+
+func (builder *MultipartBuilder) withAttachment(contentType string, text string) *MultipartBuilder {
+	header := textproto.MIMEHeader{}
+	header.Set("Content-Disposition", "attachment")
+	builder.withPart(contentType, text, header)
 	return builder
 }
 
@@ -104,7 +111,7 @@ func TestParseEmptyMail(t *testing.T) {
 	assert.Equal(t, 0, len(mail.Parts))
 	assert.Equal(t, 0, len(mail.Header))
 	assert.False(t, mail.IsAttachment)
-	assert.False(t, mail.IsSigned)
+	assert.Nil(t, mail.SignedBy)
 }
 
 func TestParseText(t *testing.T) {
@@ -206,32 +213,56 @@ func TestParseMultipartWithQuotedPrintable(t *testing.T) {
 }
 
 type MockGpg struct {
-	t                                                     *testing.T
-	expectedMicAlgorithm, expectedData, expectedSignature string
-	checked                                               bool
+	t                                  *testing.T
+	expectedMessage, expectedSignature string
+	checked                            bool
 }
 
-func (gpg *MockGpg) CheckSignature(micAlgorithm string, data []byte, signature []byte) bool {
-	assert.Equal(gpg.t, gpg.expectedMicAlgorithm, micAlgorithm)
-	assert.Equal(gpg.t, gpg.expectedData, string(data))
-	assert.Equal(gpg.t, gpg.expectedSignature, string(signature))
-	gpg.checked = true
-	return true
+func (mockGpg *MockGpg) CheckMessageSignature(message io.Reader, signature io.Reader, checkedSignerKey gpg.Key) error {
+	messageData, _ := ioutil.ReadAll(message)
+	signatureData, _ := ioutil.ReadAll(signature)
+
+	assert.Equal(mockGpg.t, mockGpg.expectedMessage, string(messageData))
+	assert.Equal(mockGpg.t, mockGpg.expectedSignature, string(signatureData))
+	mockGpg.checked = true
+	return nil
+}
+
+func (mockGpg *MockGpg) ReadKey(r io.Reader) (gpg.Key, error) {
+	// TODO #9 actually check something here
+	return openpgp.NewEntity("mock", "", "mock@server.local", nil)
 }
 
 func TestParseMultipartSigned(t *testing.T) {
-	text := createMultipart("frontier").
+	innerText := createMultipart("innerBoundary").
 		withPart("text/plain", "Hello there!", nil).
-		withPart("application/pgp-signature", "SIGNATURE", nil).
+		withAttachment("application/pgp-keys", "KEYS").
 		build()
 
-	expectedSignedPart := "Content-Type: text/plain\r\n\r\nHello there!\r\n"
-	mockGpg := &MockGpg{t, "pgp-sha1", expectedSignedPart, "SIGNATURE", false}
+	text := createMultipart("frontier").
+		withPart("multipart/mixed; boundary=\"innerBoundary\"", innerText, nil).
+		withAttachment("application/pgp-signature", "SIGNATURE").
+		build()
+	t.Log(text)
+	expectedSignedPart := "Content-Type: multipart/mixed; boundary=\"innerBoundary\"\r\n" +
+		"\r\n" +
+		"--innerBoundary\r\n" +
+		"Content-Type: text/plain\r\n" +
+		"\r\n" +
+		"Hello there!\r\n" +
+		"--innerBoundary\r\n" +
+		"Content-Type: application/pgp-keys\r\n" +
+		"Content-Disposition: attachment\r\n" +
+		"\r\n" +
+		"KEYS\r\n" +
+		"--innerBoundary--\r\n"
+	mockGpg := &MockGpg{t, expectedSignedPart, "SIGNATURE", false}
 	parser := Parser{mockGpg}
 	contentType := MimeMediaType{"multipart/signed", map[string]string{"boundary": "frontier", "micalg": "pgp-sha1"}}
 	mail, err := parser.parseMultipartSigned(contentType, textproto.MIMEHeader{}, strings.NewReader(text))
 	assert.NoError(t, err)
-	assert.True(t, mail.IsSigned)
+	require.NotNil(t, mail, "Mail can be parsed.")
+	assert.NotNil(t, mail.SignedBy)
 	assert.True(t, mockGpg.checked)
 	assert.Equal(t, 2, len(mail.Parts))
 }
@@ -241,19 +272,24 @@ func TestPlainText(t *testing.T) {
 	assert.Equal(t, "This is some nice plain text!\r\n", string(mail.Content))
 }
 
-func TestMultipartSigned(t *testing.T) {
-	signedPart := "Content-Type: text/plain\r\n\r\nHello this is me!\r\n\r\n"
-	mockGpg := &MockGpg{t, "pgp-sha1", signedPart, "SIGNATURE", false}
-	mail := parseMailFromFileWithGpg(t, "signed_multipart_simple.eml", mockGpg)
-	assert.True(t, mockGpg.checked)
-	assert.Equal(t, 2, len(mail.Parts))
-	assert.True(t, mail.IsSigned)
-}
+// TODO #6 Do we support signed mail parsing that do not contain a public key attachment?
+//func TestMultipartSigned(t *testing.T) {
+//	signedPart := "Content-Type: text/plain\r\n\r\nHello this is me!\r\n\r\n"
+//	mockGpg := &MockGpg{t, signedPart, "SIGNATURE", false}
+//	mail := parseMailFromFileWithGpg(t, "signed_multipart_simple.eml", mockGpg)
+//	assert.True(t, mockGpg.checked)
+//	assert.Equal(t, 2, len(mail.Parts))
+//	assert.NotFil(t, mail.SignedBy)
+//}
 
 func TestFindAttachment(t *testing.T) {
 	mail := parseMailFromFile(t, "attachment.eml")
-	data := mail.FindAttachment("application/octet-stream")
+
+	data, err := mail.FindAttachment("application/octet-stream")
+	assert.NoError(t, err)
 	assert.Equal(t, "This is a PDF file.", string(data))
-	data = mail.FindAttachment("image/png")
+
+	data, err = mail.FindAttachment("image/png")
+	assert.Error(t, err)
 	assert.Nil(t, data)
 }

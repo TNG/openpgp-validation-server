@@ -20,22 +20,26 @@ const (
 
 var store storage.GetSetDeleter
 
+func initGpgUtil(c *cli.Context) (*gpg.GPG, error) {
+	privateKeyPath := c.String("private-key")
+	if privateKeyPath == "" {
+		return nil, fmt.Errorf("Invalid private key file path: %s", privateKeyPath)
+	}
+	privateKeyInput, err := os.Open(privateKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
+	}
+	defer func() { _ = privateKeyInput.Close() }()
+
+	return gpg.NewGPG(privateKeyInput, c.String("passphrase"))
+}
+
 func appAction(c *cli.Context) error {
 	store = storage.NewMemoryStore()
 	smtpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port"))
 	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
 
-	privateKeyPath := c.String("private-key")
-	if privateKeyPath == "" {
-		return fmt.Errorf("Invalid private key file path: %s", privateKeyPath)
-	}
-	privateKeyInput, err := os.Open(privateKeyPath)
-	if err != nil {
-		return fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
-	}
-	defer func() { _ = privateKeyInput.Close() }()
-
-	gpgUtil, err := gpg.NewGPG(privateKeyInput, c.String("passphrase"))
+	gpgUtil, err := initGpgUtil(c)
 	if err != nil {
 		return fmt.Errorf("Cannot initialize GPG: %s", err)
 	}
@@ -64,17 +68,7 @@ func processMailAction(c *cli.Context) error {
 		defer func() { _ = inputMail.Close() }()
 	}
 
-	privateKeyPath := c.String("private-key")
-	if privateKeyPath == "" {
-		return fmt.Errorf("Invalid private key file path: %s", privateKeyPath)
-	}
-	privateKeyInput, err := os.Open(privateKeyPath)
-	if err != nil {
-		return fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
-	}
-	defer func() { _ = privateKeyInput.Close() }()
-
-	gpgUtil, err := gpg.NewGPG(privateKeyInput, c.String("passphrase"))
+	gpgUtil, err := initGpgUtil(c)
 	if err != nil {
 		return fmt.Errorf("Cannot initialize GPG: %s", err)
 	}

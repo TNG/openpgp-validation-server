@@ -18,13 +18,13 @@ func TestConstructCryptSignEmail(t *testing.T) {
 	clientPublicKeyFile, cleanup := utils.Open(t, asciiKeyFilePublic)
 	defer cleanup()
 
-	clientKey, err := gpg.ReadKey(clientPublicKeyFile)
-	assert.NoError(t, err)
-
 	serverPrivateKeyFile, cleanup := utils.Open(t, asciiKeyFilePrivate)
 	defer cleanup()
 
 	gpg, err := gpg.NewGPG(serverPrivateKeyFile, passphrase)
+	assert.NoError(t, err)
+
+	clientKey, err := gpg.ReadKey(clientPublicKeyFile)
 	assert.NoError(t, err)
 
 	m := OutgoingMail{"It works!", "test-gpg-validation@client.local", clientKey, []byte{}, gpg}

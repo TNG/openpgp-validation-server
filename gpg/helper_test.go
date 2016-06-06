@@ -16,7 +16,7 @@ func readEntityTest(t *testing.T, path string, armored bool, expectedKeys [2]boo
 	}
 
 	//entity, err := readEntity(keyFile, armored)
-	entity, err := ReadKey(keyFile)
+	entity, err := readKey(keyFile)
 	if err != nil {
 		t.Error("Failed to read entity:", err)
 	}

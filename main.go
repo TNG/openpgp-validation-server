@@ -113,85 +113,82 @@ func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.Exi
 	}
 }
 
-// RunApp starts the server with the provided arguments.
-func RunApp(args []string) {
-	app := cli.NewApp()
-	app.Name = "GPG Validation Service"
-	app.Usage = "Run a server that manages email verification and signs verified keys with the servers GPG key."
-
-	app.Commands = []cli.Command{
-		{
-			Name:   "process-mail",
-			Usage:  "process an incoming email",
-			Action: cliErrorHandler(processMailAction),
-			Flags: []cli.Flag{
+// subCommands to execute single aspects of the key validation process without requiring the full server startup.
+var subCommands = []cli.Command{
+	{
+		Name:   "process-mail",
+		Usage:  "process an incoming email",
+		Action: cliErrorHandler(processMailAction),
+		Flags: append(
+			[]cli.Flag{
 				cli.StringFlag{
 					Name:  "file",
 					Value: "./test/mails/signed_request_enigmail.eml",
 					// TODO Handle missing value, use better default
 					Usage: "`FILE_PATH` of the mail file, omit to read from stdin",
 				},
-				cli.StringFlag{
-					Name:  "private-key",
-					Value: "./test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc.gpg",
-					// TODO Handle missing value, use better default
-					Usage: "`PRIVATE_KEY_PATH` to the private gpg key of the server",
-				},
-				cli.StringFlag{
-					Name:  "passphrase",
-					Value: "validation",
-					// TODO Handle missing value, use better default.
-					Usage: "`PASSPHRASE` of the private key",
-				},
+			},
+			privateKeyFlags...,
+		),
+	},
+	{
+		Name:   "confirm-nonce",
+		Usage:  "process an nonce that has been confirmed",
+		Action: cliErrorHandler(confirmNonceAction),
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "nonce",
+				Value: "",
+				Usage: "String value of the Nonce",
 			},
 		},
-		{
-			Name:   "confirm-nonce",
-			Usage:  "process an nonce that has been confirmed",
-			Action: cliErrorHandler(confirmNonceAction),
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "nonce",
-					Value: "",
-					Usage: "String value of the Nonce",
-				},
-			},
-		},
-	}
+	},
+}
 
+var privateKeyFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:  "private-key",
+		Value: "./test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc.gpg",
+		// TODO Handle missing value, use better default
+		Usage: "`PRIVATE_KEY_PATH` to the private gpg key of the server",
+	},
+	cli.StringFlag{
+		Name:  "passphrase",
+		Value: "validation",
+		// TODO Handle missing value, use better default.
+		Usage: "`PASSPHRASE` of the private key",
+	},
+}
+
+// RunApp starts the server with the provided arguments.
+func RunApp(args []string) {
+	app := cli.NewApp()
+	app.Name = "GPG Validation Service"
+	app.Usage = "Run a server that manages email verification and signs verified keys with the servers GPG key."
+	app.Commands = subCommands
 	app.Action = cliErrorHandler(appAction)
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "host",
-			Value: "localhost",
-			Usage: "`HOST` of the mail and http servers. Set to the blank value to bind to all interfaces.",
+	app.Flags = append(
+		[]cli.Flag{
+			cli.StringFlag{
+				Name:  "host",
+				Value: "localhost",
+				Usage: "`HOST` of the mail and http servers. Set to the blank value to bind to all interfaces.",
+			},
+			cli.IntFlag{
+				Name:  "http-port",
+				Value: 8080,
+				Usage: "`PORT` for the HTTP nonce receiver",
+			},
+			cli.IntFlag{
+				Name:  "smtp-port",
+				Value: 2525,
+				Usage: "`PORT` for the SMTP server",
+			},
 		},
-		cli.IntFlag{
-			Name:  "http-port",
-			Value: 8080,
-			Usage: "`PORT` for the HTTP nonce receiver",
-		},
-		cli.IntFlag{
-			Name:  "smtp-port",
-			Value: 2525,
-			Usage: "`PORT` for the SMTP server",
-		},
-		cli.StringFlag{
-			Name:  "private-key",
-			Value: "./test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc.gpg",
-			// TODO Handle missing value, use better default
-			Usage: "`PRIVATE_KEY_PATH` to the private gpg key of the server",
-		},
-		cli.StringFlag{
-			Name:  "passphrase",
-			Value: "validation",
-			// TODO Handle missing value, use better default.
-			Usage: "`PASSPHRASE` of the private key",
-		},
-	}
+		privateKeyFlags...,
+	)
 
-	err := app.Run(args)
-	if err != nil {
+	if err := app.Run(args); err != nil {
 		cli.OsExiter(errorExitCode)
 	} else {
 		cli.OsExiter(okExitCode)

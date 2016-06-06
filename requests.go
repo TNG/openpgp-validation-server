@@ -31,6 +31,11 @@ func handleIncomingMail(incomingMail *smtp.MailEnvelope) {
 	}
 
 	log.Printf("Mail has valid signature: %v.\n", result.IsSigned())
+
+	if !result.IsSigned() {
+		return
+	}
+
 	pubKey := result.GetPublicKey()
 
 	for _, identity := range pubKey.Identities {
@@ -54,16 +59,16 @@ func handleIncomingMail(incomingMail *smtp.MailEnvelope) {
 		}
 		b, err := m.Bytes()
 		if err != nil {
-			log.Printf("Error writing return email: %v\n", err)
+			log.Printf("Error constructing return email: %v\n", err)
 			return
 		}
 		log.Println(string(b))
 		file, err := os.Create("nonce.eml")
 		if err != nil {
-			log.Printf("Error writing return email: %v\n", err)
+			log.Printf("Error creating return email: %v\n", err)
 			return
 		}
-		defer func() { _ = file.Close() }()
+		defer func(f *os.File) { _ = f.Close() }(file) // When using `defer` inside a loop, don't access closure.
 		_, err = file.Write(b)
 		if err != nil {
 			log.Printf("Error writing return email: %v\n", err)

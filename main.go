@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/validator"
-	"github.com/codegangsta/cli"
 	"log"
 	"os"
+
+	"github.com/TNG/gpg-validation-server/gpg"
+	"github.com/TNG/gpg-validation-server/storage"
+	"github.com/TNG/gpg-validation-server/validator"
+	"github.com/codegangsta/cli"
 )
 
 const (
@@ -14,10 +18,33 @@ const (
 	errorExitCode = 1
 )
 
+var store storage.GetSetDeleter
+
 func appAction(c *cli.Context) error {
-	fmt.Println("Args", c.Args())
-	fmt.Println("host", c.String("host"))
-	// TODO #11 Start the servers
+	store = storage.NewMemoryStore()
+	smtpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port"))
+	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
+
+	privateKeyPath := c.String("private-key")
+	if privateKeyPath == "" {
+		return fmt.Errorf("Invalid private key file path: %s", privateKeyPath)
+	}
+	privateKeyInput, err := os.Open(privateKeyPath)
+	if err != nil {
+		return fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
+	}
+	defer func() { _ = privateKeyInput.Close() }()
+
+	gpgUtil, err := gpg.NewGPG(privateKeyInput, c.String("passphrase"))
+	if err != nil {
+		return fmt.Errorf("Cannot initialize GPG: %s", err)
+	}
+
+	log.Println("Setting up SMTP server listening at: ", smtpHost)
+	go serveSMTPRequestReceiver(fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port")), *gpgUtil)
+
+	log.Println("Setting up HTTP server listening at: ", httpHost)
+	log.Fatal(serveNonceConfirmer(c.String("host") + ":8080"))
 	return nil
 }
 
@@ -62,6 +89,21 @@ func processMailAction(c *cli.Context) error {
 	return nil
 }
 
+func confirmNonceAction(c *cli.Context) error {
+	var nonce [32]byte
+
+	nonceSlice, err := hex.DecodeString(c.String("nonce"))
+	if err != nil {
+		return err
+	}
+	if len(nonceSlice) != 32 {
+		return errors.New(fmt.Sprint("Nonce has invalid length: ", len(nonceSlice)))
+	}
+	copy(nonce[:], nonceSlice)
+
+	return ConfirmNonce(nonce)
+}
+
 func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.ExitCoder {
 	return func(c *cli.Context) cli.ExitCoder {
 		if err := action(c); err != nil {
@@ -103,6 +145,18 @@ func RunApp(args []string) {
 				},
 			},
 		},
+		{
+			Name:   "confirm-nonce",
+			Usage:  "process an nonce that has been confirmed",
+			Action: cliErrorHandler(confirmNonceAction),
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "nonce",
+					Value: "",
+					Usage: "String value of the Nonce",
+				},
+			},
+		},
 	}
 
 	app.Action = cliErrorHandler(appAction)
@@ -110,7 +164,29 @@ func RunApp(args []string) {
 		cli.StringFlag{
 			Name:  "host",
 			Value: "localhost",
-			Usage: "`HOST` of the mail server",
+			Usage: "`HOST` of the mail and http servers. Set to the blank value to bind to all interfaces.",
+		},
+		cli.IntFlag{
+			Name:  "http-port",
+			Value: 8080,
+			Usage: "`PORT` for the HTTP nonce receiver",
+		},
+		cli.IntFlag{
+			Name:  "smtp-port",
+			Value: 2525,
+			Usage: "`PORT` for the SMTP server",
+		},
+		cli.StringFlag{
+			Name:  "private-key",
+			Value: "./test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc.gpg",
+			// TODO Handle missing value, use better default
+			Usage: "`PRIVATE_KEY_PATH` to the private gpg key of the server",
+		},
+		cli.StringFlag{
+			Name:  "passphrase",
+			Value: "validation",
+			// TODO Handle missing value, use better default.
+			Usage: "`PASSPHRASE` of the private key",
 		},
 	}
 

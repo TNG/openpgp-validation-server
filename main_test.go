@@ -25,9 +25,9 @@ func testMainWithArguments(t *testing.T, expectedExitCode int, args ...string) {
 	assert.Equal(t, expectedExitCode, actualExitCode, strings.Join(args, " "))
 }
 
-func TestRunMain(t *testing.T) {
-	testMainWithArguments(t, okExitCode)
-}
+//func TestRunMain(t *testing.T) {
+//testMainWithArguments(t, okExitCode)
+//}
 
 func TestProcessMailDefault(t *testing.T) {
 	testMainWithArguments(t, okExitCode, "process-mail")

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -14,17 +15,30 @@ import (
 	"github.com/TNG/gpg-validation-server/validator"
 )
 
-var serverGPG gpg.GPG
-
-func serveSMTPRequestReceiver(host string, gpg gpg.GPG) {
-	serverGPG = gpg
-	smtpServer := smtp.NewServer(host, handleIncomingMail)
+func serveSMTPRequestReceiver(host string, gpgUtil *gpg.GPG) {
+	smtpServer := smtp.NewServer(host, getIncomingMailEnvelopeHandler(gpgUtil))
 	smtpServer.Run()
 }
 
-func handleIncomingMail(incomingMail *smtp.MailEnvelope) {
+func getIncomingMailEnvelopeHandler(gpgUtil *gpg.GPG) func(*smtp.MailEnvelope) {
+	return func(incomingMail *smtp.MailEnvelope) {
+		handleIncomingMailEnvelope(incomingMail, gpgUtil)
+	}
+}
+
+func getIncomingMailHandler(gpgUtil *gpg.GPG) func(io.Reader) {
+	return func(incomingMail io.Reader) {
+		handleIncomingMail(incomingMail, gpgUtil)
+	}
+}
+
+func handleIncomingMailEnvelope(incomingMail *smtp.MailEnvelope, gpgUtil *gpg.GPG) {
 	log.Printf("Incoming mail From: %v To: %v\n", incomingMail.From, incomingMail.To)
-	result, err := validator.HandleMail(bytes.NewReader(incomingMail.Content), &serverGPG)
+	handleIncomingMail(bytes.NewReader(incomingMail.Content), gpgUtil)
+}
+
+func handleIncomingMail(incomingMail io.Reader, gpgUtil *gpg.GPG) {
+	result, err := validator.HandleMail(incomingMail, gpgUtil)
 	if err != nil {
 		log.Printf("Cannot handle mail: %s", err)
 		return
@@ -44,18 +58,20 @@ func handleIncomingMail(incomingMail *smtp.MailEnvelope) {
 		var nonce [32]byte
 		copy(nonce[:], nonceSlice)
 
-		store.Set(nonce, storage.RequestInfo{
-			Key:       pubKey,
-			Email:     identity.UserId.Email,
-			Timestamp: time.Now(),
-		})
+		if store != nil {
+			store.Set(nonce, storage.RequestInfo{
+				Key:       pubKey,
+				Email:     identity.UserId.Email,
+				Timestamp: time.Now(),
+			})
+		}
 
 		m := mail.OutgoingMail{
 			Message:        hex.EncodeToString(nonce[:]),
 			RecipientEmail: identity.UserId.Email,
 			RecipientKey:   pubKey,
 			Attachment:     []byte{},
-			GPG:            &serverGPG,
+			GPG:            gpgUtil,
 		}
 		b, err := m.Bytes()
 		if err != nil {

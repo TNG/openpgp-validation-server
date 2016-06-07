@@ -9,7 +9,6 @@ import (
 
 	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/storage"
-	"github.com/TNG/gpg-validation-server/validator"
 	"github.com/codegangsta/cli"
 )
 
@@ -45,7 +44,7 @@ func appAction(c *cli.Context) error {
 	}
 
 	log.Println("Setting up SMTP server listening at: ", smtpHost)
-	go serveSMTPRequestReceiver(fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port")), *gpgUtil)
+	go serveSMTPRequestReceiver(fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port")), gpgUtil)
 
 	log.Println("Setting up HTTP server listening at: ", httpHost)
 	log.Fatal(serveNonceConfirmer(c.String("host") + ":8080"))
@@ -69,16 +68,9 @@ func processMailAction(c *cli.Context) error {
 	}
 
 	gpgUtil, err := initGpgUtil(c)
-	if err != nil {
-		return fmt.Errorf("Cannot initialize GPG: %s", err)
-	}
 
-	result, err := validator.HandleMail(inputMail, gpgUtil)
-	if err != nil {
-		return fmt.Errorf("Cannot handle mail: %s", err)
-	}
-
-	log.Printf("Mail has valid signature: %v.\n", result.IsSigned())
+	processMail := getIncomingMailHandler(gpgUtil)
+	processMail(inputMail)
 
 	return nil
 }

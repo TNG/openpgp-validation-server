@@ -39,10 +39,14 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 	requestKey := request.getPublicKey()
 
 	for _, identity := range requestKey.Identities {
-		log.Printf("Sending mail to %s", identity.UserId.Email)
-		nonceSlice, _ := hex.DecodeString("32ff00000000000032ff00000000000032ff00000000000032ff000000000123")
-		var nonce [32]byte
-		copy(nonce[:], nonceSlice)
+		nonce, err := generateNonce()
+		if err != nil {
+			log.Fatalf("Could not generate nonce, stopping now: %v\n", err)
+			return
+		}
+		nonceString := hex.EncodeToString(nonce[:])
+
+		log.Printf("Sending mail to %s with nonce %s\n", identity.UserId.Email, nonceString)
 
 		if store != nil {
 			store.Set(nonce, storage.RequestInfo{
@@ -53,7 +57,7 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 		}
 
 		responses = append(responses, mail.OutgoingMail{
-			Message:        hex.EncodeToString(nonce[:]),
+			Message:        nonceString,
 			RecipientEmail: identity.UserId.Email,
 			RecipientKey:   requestKey,
 			Attachment:     nil,

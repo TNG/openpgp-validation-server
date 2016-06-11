@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/hex"
-	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/storage"
-	"os"
 	"testing"
 	"time"
+
+	"github.com/TNG/gpg-validation-server/gpg"
+	"github.com/TNG/gpg-validation-server/storage"
+	"github.com/TNG/gpg-validation-server/test/utils"
 )
 
 func TestConfirmNonce(t *testing.T) {
@@ -15,11 +16,8 @@ func TestConfirmNonce(t *testing.T) {
 	var nonce [32]byte
 	copy(nonce[:], nonceSlice)
 
-	path := "test/keys/test-gpg-validation@other.local (0xF043F26E) pub.asc"
-	keyFile, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
+	keyFile, cleanup := utils.Open(t, "test/keys/test-gpg-validation@other.local (0xF043F26E) pub.asc")
+	defer cleanup()
 
 	emptyGPG := gpg.GPG{}
 	entity, err := emptyGPG.ReadKey(keyFile)

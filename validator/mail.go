@@ -1,15 +1,19 @@
 package validator
 
 import (
+	"bytes"
 	"encoding/hex"
 	"io"
 	"log"
+	"text/template"
 	"time"
 
 	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/mail"
 	"github.com/TNG/gpg-validation-server/storage"
 )
+
+var requestResponseMessage *template.Template
 
 // MailInfo contains the result of processing a given mail.
 type MailInfo struct {
@@ -30,7 +34,7 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 	request := &MailInfo{entity: requestEntity}
 
 	if !request.isSigned() {
-		log.Printf("Mail from %s is missing valid signature. Doing nothing.", request.getSender())
+		log.Printf("Mail from %s is missing valid signature.", request.getSender())
 		return
 	}
 
@@ -41,12 +45,17 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 	for _, identity := range requestKey.Identities {
 		nonce, err := generateNonce()
 		if err != nil {
-			log.Fatalf("Could not generate nonce, stopping now: %v\n", err)
+			log.Panicf("Cannot generate nonce: %v\n", err)
 			return
 		}
 		nonceString := hex.EncodeToString(nonce[:])
+		message, err := request.getNonceMessage(nonceString)
+		if err != nil {
+			log.Panicf("Cannot generate nonce message: %v\n", err)
+			return
+		}
 
-		log.Printf("Sending mail to %s with nonce %s\n", identity.UserId.Email, nonceString)
+		log.Printf("Sending nonce mail to %s with nonce %s\n", identity.UserId.Email, nonceString)
 
 		if store != nil {
 			store.Set(nonce, storage.RequestInfo{
@@ -57,7 +66,7 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 		}
 
 		responses = append(responses, mail.OutgoingMail{
-			Message:        nonceString,
+			Message:        message,
 			RecipientEmail: identity.UserId.Email,
 			RecipientKey:   requestKey,
 			Attachment:     nil,
@@ -81,4 +90,21 @@ func (info *MailInfo) getPublicKey() gpg.Key {
 // GetSender returns the sender as given in the mail header.
 func (info *MailInfo) getSender() string {
 	return info.entity.GetSender()
+}
+
+func (info *MailInfo) getNonceMessage(nonceString string) (string, error) {
+	if requestResponseMessage == nil {
+		requestResponseMessage = template.Must(template.ParseFiles("./validator/nonceMail.tmpl"))
+	}
+
+	message := new(bytes.Buffer)
+	err := requestResponseMessage.Execute(message, struct{ Nonce, Requester string }{
+		Nonce:     nonceString,
+		Requester: info.getSender(),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return message.String(), nil
 }

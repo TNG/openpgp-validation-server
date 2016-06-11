@@ -29,9 +29,9 @@ func (m OutgoingMail) Bytes() ([]byte, error) {
 	now := time.Now()
 	empw := NewEncodingMultipartWriter(&w, "encrypted", "application/pgp-encrypted", map[string]string{
 		"Date":                now.Format(time.RFC1123Z),
-		"From":                "Test GPG Validation Server <test-gpg-validation-server@tngtech.com>",
+		"From":                "Test GPG Validation Server <test-gpg-validation-server@server.local>",
 		"To":                  m.RecipientEmail,
-		"Message-ID":          now.Format(time.RFC3339Nano) + "@gpg-validation.tngtech.com>",
+		"Message-ID":          now.Format(time.RFC3339Nano) + "@gpg-validation.server.local>",
 		"Subject":             "GPG Key Validation",
 		"X-Mailer":            "github.com/TNG/gpg-validation-server",
 		"Content-Description": "OpenPGP encrypted message",

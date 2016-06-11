@@ -6,10 +6,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"text/template"
 
 	"github.com/TNG/gpg-validation-server/mail"
 	"github.com/TNG/gpg-validation-server/storage"
 )
+
+var signedKeyMessage = template.Must(template.ParseFiles("./templates/signedKeyMail.tmpl"))
 
 // NonceLength in byte
 const NonceLength = 32
@@ -64,8 +67,10 @@ func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil 
 	if err != nil {
 		return nil, err
 	}
+	message := getSignedKeyMessage()
+
 	mail := mail.OutgoingMail{
-		Message:        "Here is your signed key!",
+		Message:        message,
 		RecipientEmail: requestInfo.Email,
 		RecipientKey:   requestInfo.Key,
 		Attachment:     buf.Bytes(),
@@ -73,4 +78,15 @@ func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil 
 	}
 
 	return &mail, nil
+}
+
+func getSignedKeyMessage() string {
+	message := new(bytes.Buffer)
+	err := signedKeyMessage.Execute(message, struct{}{})
+	if err != nil {
+		log.Panicf("Cannot generate signed-key message: %v\n", err)
+		return ""
+	}
+
+	return message.String()
 }

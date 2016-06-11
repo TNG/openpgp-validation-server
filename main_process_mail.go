@@ -44,7 +44,12 @@ func handleIncomingMail(incomingMail io.Reader) {
 	}
 }
 
-func sendOutgoingMail(mailType string, mail *mail.OutgoingMail) {
+// sendOutgoingMail sends a mail via SMTP if configured. A corresponding mail file is written for debugging purposes.
+// Returns `true` if mail could be successfully submitted, `false` otherwise.
+// There is no guarantee, that the mail actually arrives in the recipients mailbox.
+func sendOutgoingMail(mailType string, mail *mail.OutgoingMail) (success bool) {
+	success = false
+
 	content, err := mail.Bytes()
 	if err != nil {
 		log.Printf("Cannot construct %s email: %v\n", mailType, err)
@@ -73,4 +78,6 @@ func sendOutgoingMail(mailType string, mail *mail.OutgoingMail) {
 			return
 		}
 	}
+
+	return true
 }

@@ -52,5 +52,8 @@ func handleNonceConfirmation(nonce [validator.NonceLength]byte) {
 		return
 	}
 
-	sendOutgoingMail("signature", responseMail)
+	if sendOutgoingMail("signature", responseMail) {
+		log.Printf("Deleting nonce %v after signed key has been sent successfully.", nonce)
+		store.Delete(nonce)
+	}
 }

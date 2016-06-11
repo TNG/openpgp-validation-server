@@ -49,11 +49,7 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 			return
 		}
 		nonceString := hex.EncodeToString(nonce[:])
-		message, err := request.getNonceMessage(nonceString)
-		if err != nil {
-			log.Panicf("Cannot generate nonce message: %v\n", err)
-			return
-		}
+		message := request.getNonceMessage(nonceString)
 
 		log.Printf("Sending nonce mail to %s with nonce %s\n", identity.UserId.Email, nonceString)
 
@@ -92,15 +88,16 @@ func (info *MailInfo) getSender() string {
 	return info.entity.GetSender()
 }
 
-func (info *MailInfo) getNonceMessage(nonceString string) (string, error) {
+func (info *MailInfo) getNonceMessage(nonceString string) string {
 	message := new(bytes.Buffer)
 	err := requestResponseMessage.Execute(message, struct{ Nonce, Requester string }{
 		Nonce:     nonceString,
 		Requester: info.getSender(),
 	})
 	if err != nil {
-		return "", err
+		log.Panicf("Cannot generate nonce message: %v\n", err)
+		return ""
 	}
 
-	return message.String(), nil
+	return message.String()
 }

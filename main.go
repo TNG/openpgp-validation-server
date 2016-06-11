@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +8,7 @@ import (
 
 	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/storage"
+	"github.com/TNG/gpg-validation-server/validator"
 	"github.com/codegangsta/cli"
 )
 
@@ -80,18 +79,11 @@ func processMailAction(c *cli.Context) error {
 }
 
 func confirmNonceAction(c *cli.Context) error {
-	var nonce [32]byte
-
-	nonceSlice, err := hex.DecodeString(c.String("nonce"))
+	nonce, err := validator.NonceFromString(c.String("nonce"))
 	if err != nil {
-		return err
+		return fmt.Errorf("Cannot parse nonce: %v", err)
 	}
-	if len(nonceSlice) != 32 {
-		return errors.New(fmt.Sprint("Nonce has invalid length: ", len(nonceSlice)))
-	}
-	copy(nonce[:], nonceSlice)
-
-	return ConfirmNonce(nonce)
+	return validator.ConfirmNonce(nonce, store)
 }
 
 func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.ExitCoder {
@@ -136,7 +128,7 @@ var subCommands = []cli.Command{
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "nonce",
-				Value: "",
+				Value: "<missing>",
 				Usage: "String value of the Nonce",
 			},
 		},

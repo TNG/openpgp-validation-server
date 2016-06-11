@@ -13,7 +13,7 @@ import (
 	"github.com/TNG/gpg-validation-server/storage"
 )
 
-var requestResponseMessage *template.Template
+var requestResponseMessage = template.Must(template.ParseFiles("./templates/nonceMail.tmpl"))
 
 // MailInfo contains the result of processing a given mail.
 type MailInfo struct {
@@ -93,10 +93,6 @@ func (info *MailInfo) getSender() string {
 }
 
 func (info *MailInfo) getNonceMessage(nonceString string) (string, error) {
-	if requestResponseMessage == nil {
-		requestResponseMessage = template.Must(template.ParseFiles("./validator/nonceMail.tmpl"))
-	}
-
 	message := new(bytes.Buffer)
 	err := requestResponseMessage.Execute(message, struct{ Nonce, Requester string }{
 		Nonce:     nonceString,

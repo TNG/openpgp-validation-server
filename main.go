@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 
 	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/storage"
@@ -47,7 +48,7 @@ func appAction(c *cli.Context) error {
 	go serveSMTPRequestReceiver(fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port")), gpgUtil)
 
 	log.Println("Setting up HTTP server listening at: ", httpHost)
-	log.Fatal(serveNonceConfirmer(c.String("host") + ":8080"))
+	log.Panic(serveNonceConfirmer(c.String("host") + ":8080"))
 	return nil
 }
 
@@ -94,10 +95,18 @@ func confirmNonceAction(c *cli.Context) error {
 }
 
 func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.ExitCoder {
-	return func(c *cli.Context) cli.ExitCoder {
+	return func(c *cli.Context) (e cli.ExitCoder) {
+		defer func() {
+			if r := recover(); r != nil {
+				debug.PrintStack()
+				e = cli.NewExitError(fmt.Sprintf("Panic: %v", r), errorExitCode)
+			}
+		}()
+
 		if err := action(c); err != nil {
-			return cli.NewExitError(fmt.Sprint("Error: ", err), errorExitCode)
+			return cli.NewExitError(fmt.Sprintf("Error: %v", err), errorExitCode)
 		}
+
 		return nil
 	}
 }

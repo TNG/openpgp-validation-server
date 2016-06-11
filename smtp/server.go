@@ -29,5 +29,5 @@ func (server *MailServer) mailHandler(origin net.Addr, fromAddress string, toAdd
 
 // Run starts a goroutine which listens and processes mail as it arrives.
 func (server *MailServer) Run() {
-	go log.Fatal(smtpd.ListenAndServe(server.Address, server.mailHandler, "gpg-validation-server", ""))
+	go log.Panic(smtpd.ListenAndServe(server.Address, server.mailHandler, "gpg-validation-server", ""))
 }

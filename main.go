@@ -68,6 +68,9 @@ func processMailAction(c *cli.Context) error {
 	}
 
 	gpgUtil, err := initGpgUtil(c)
+	if err != nil {
+		return err
+	}
 
 	processMail := getIncomingMailHandler(gpgUtil)
 	processMail(inputMail)

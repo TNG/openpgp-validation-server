@@ -4,13 +4,23 @@ import (
 	"net/smtp"
 )
 
-// SingleServerSendMailer sends mails via one specified SMTP server
+// MailSender allows simple mail sending.
+type MailSender interface {
+	SendMail(envelope *MailEnvelope) error
+}
+
+// SingleServerSendMailer sends mails via one specified SMTP server.
 type SingleServerSendMailer struct {
 	Server string
 }
 
+// NewSingleServerSendMailer returns a MailSender offering outgoing SMTP functionality.
+func NewSingleServerSendMailer(Server string) *SingleServerSendMailer {
+	return &SingleServerSendMailer{Server}
+}
+
 // SendMail tries to send the given mail envelope via SMTP localhost
-func (mailer SingleServerSendMailer) SendMail(envelope MailEnvelope) (err error) {
+func (mailer SingleServerSendMailer) SendMail(envelope *MailEnvelope) (err error) {
 	// Connect to the remote SMTP server.
 	c, err := smtp.Dial(mailer.Server)
 	if err != nil {

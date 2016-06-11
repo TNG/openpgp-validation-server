@@ -23,13 +23,18 @@ type OutgoingMail struct {
 	GPG            MessageEncrypter
 }
 
+// From returns the sender of the mail.
+func (m OutgoingMail) From() string {
+	return "Test GPG Validation Server <test-gpg-validation-server@server.local>"
+}
+
 // Bytes returns the given message as an OpenPGP/MIME encrypted and signed message (RFC 2440 and 3156)
 func (m OutgoingMail) Bytes() ([]byte, error) {
 	w := bytes.Buffer{}
 	now := time.Now()
 	empw := NewEncodingMultipartWriter(&w, "encrypted", "application/pgp-encrypted", map[string]string{
 		"Date":                now.Format(time.RFC1123Z),
-		"From":                "Test GPG Validation Server <test-gpg-validation-server@server.local>",
+		"From":                m.From(),
 		"To":                  m.RecipientEmail,
 		"Message-ID":          now.Format(time.RFC3339Nano) + "@gpg-validation.server.local>",
 		"Subject":             "GPG Key Validation",

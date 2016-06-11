@@ -20,7 +20,7 @@ type MailInfo struct {
 	entity *mail.MimeEntity
 }
 
-// HandleMail return zero or more outgoing mails in response to an incoming mail.
+// HandleMail returns zero or more outgoing mails in response to an incoming mail.
 func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.GetSetDeleter) (responses []mail.OutgoingMail) {
 	responses = []mail.OutgoingMail{}
 
@@ -34,11 +34,11 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 	request := &MailInfo{entity: requestEntity}
 
 	if !request.isSigned() {
-		log.Printf("Mail from %s is missing valid signature.", request.getSender())
+		log.Printf("Mail from '%s' is missing valid signature.", request.getSender())
 		return
 	}
 
-	log.Printf("Mail from %s has valid signature.", request.getSender())
+	log.Printf("Mail from '%s' has valid signature.", request.getSender())
 
 	requestKey := request.getPublicKey()
 

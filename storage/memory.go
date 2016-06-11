@@ -1,7 +1,12 @@
 package storage
 
+import (
+	"log"
+)
+
 // NewMemoryStore returns a GetSetDeleter that only stores values in memory
 func NewMemoryStore() GetSetDeleter {
+	log.Println("Using in-memory store: All data will be lost on service restart.")
 	m := memoryStore{}
 	m.store = map[[nonceLength]byte]*RequestInfo{}
 	return &m

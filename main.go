@@ -7,6 +7,8 @@ import (
 	"runtime/debug"
 
 	"github.com/TNG/gpg-validation-server/gpg"
+	"github.com/TNG/gpg-validation-server/mail"
+	"github.com/TNG/gpg-validation-server/smtp"
 	"github.com/TNG/gpg-validation-server/storage"
 	"github.com/TNG/gpg-validation-server/validator"
 	"github.com/codegangsta/cli"
@@ -17,38 +19,65 @@ const (
 	errorExitCode = 1
 )
 
-var store storage.GetSetDeleter
+var (
+	gpgUtil    mail.GpgUtility       // This service is mandatory.
+	store      storage.GetSetDeleter // This service is optional, when not available no data will be stored.
+	mailSender smtp.MailSender       // This service is optional, when not available no outgoing email will be sent.
+)
 
-func initGpgUtil(c *cli.Context) (*gpg.GPG, error) {
+func initGpgUtil(c *cli.Context) error {
 	privateKeyPath := c.String("private-key")
 	if privateKeyPath == "" {
-		return nil, fmt.Errorf("Invalid private key file path: %s", privateKeyPath)
+		return fmt.Errorf("Invalid private key file path: %s", privateKeyPath)
 	}
 	privateKeyInput, err := os.Open(privateKeyPath)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
+		return fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
 	}
 	defer func() { _ = privateKeyInput.Close() }()
 
-	return gpg.NewGPG(privateKeyInput, c.String("passphrase"))
-}
-
-func appAction(c *cli.Context) error {
-	store = storage.NewMemoryStore()
-	smtpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port"))
-	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
-
-	gpgUtil, err := initGpgUtil(c)
+	util, err := gpg.NewGPG(privateKeyInput, c.String("passphrase"))
 	if err != nil {
 		return fmt.Errorf("Cannot initialize GPG: %s", err)
 	}
+	gpgUtil = util
 
-	log.Println("Setting up SMTP server listening at: ", smtpHost)
-	go serveSMTPRequestReceiver(fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-port")), gpgUtil)
+	return nil
+}
+
+func appAction(c *cli.Context) error {
+	if err := initGlobalServices(c); err != nil {
+		return err
+	}
+
+	runServers(c)
+
+	return nil
+}
+
+func initGlobalServices(c *cli.Context) error {
+	if err := initGpgUtil(c); err != nil {
+		return err
+	}
+
+	store = storage.NewMemoryStore()
+
+	smtpOutHost := fmt.Sprintf("%v:%v", c.String("smtp-out-host"), c.Int("smtp-out-port"))
+	log.Println("Using outgoing SMTP server at: ", smtpOutHost)
+	mailSender = smtp.NewSingleServerSendMailer(smtpOutHost)
+
+	return nil
+}
+
+func runServers(c *cli.Context) {
+	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
+	smtpInHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-in-port"))
+
+	log.Println("Setting up SMTP server listening at: ", smtpInHost)
+	go serveSMTPRequestReceiver(smtpInHost)
 
 	log.Println("Setting up HTTP server listening at: ", httpHost)
-	log.Panic(serveNonceConfirmer(c.String("host") + ":8080"))
-	return nil
+	log.Panic(serveNonceConfirmer(httpHost))
 }
 
 func processMailAction(c *cli.Context) error {
@@ -67,23 +96,31 @@ func processMailAction(c *cli.Context) error {
 		defer func() { _ = inputMail.Close() }()
 	}
 
-	gpgUtil, err := initGpgUtil(c)
+	err = initGpgUtil(c)
 	if err != nil {
 		return err
 	}
 
-	processMail := getIncomingMailHandler(gpgUtil)
+	processMail := getIncomingMailHandler()
 	processMail(inputMail)
 
 	return nil
 }
 
 func confirmNonceAction(c *cli.Context) error {
-	nonce, err := validator.NonceFromString(c.String("nonce"))
-	if err != nil {
-		return fmt.Errorf("Cannot parse nonce: %v", err)
+	if err := initGpgUtil(c); err != nil {
+		return err
 	}
-	return validator.ConfirmNonce(nonce, store)
+
+	nonceString := c.String("nonce")
+	nonce, err := validator.NonceFromString(nonceString)
+	if err != nil {
+		return fmt.Errorf("Cannot parse nonce '%v': %v", nonceString, err)
+	}
+
+	handleNonceConfirmation(nonce)
+
+	return nil
 }
 
 func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.ExitCoder {
@@ -125,13 +162,16 @@ var subCommands = []cli.Command{
 		Name:   "confirm-nonce",
 		Usage:  "process an nonce that has been confirmed",
 		Action: cliErrorHandler(confirmNonceAction),
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "nonce",
-				Value: "<missing>",
-				Usage: "String value of the Nonce",
+		Flags: append(
+			[]cli.Flag{
+				cli.StringFlag{
+					Name:  "nonce",
+					Value: "<missing>",
+					Usage: "String value of the Nonce",
+				},
 			},
-		},
+			privateKeyFlags...,
+		),
 	},
 }
 
@@ -167,12 +207,22 @@ func RunApp(args []string) {
 			cli.IntFlag{
 				Name:  "http-port",
 				Value: 8080,
-				Usage: "`PORT` for the HTTP nonce receiver",
+				Usage: "`PORT` for the HTTP nonce listener",
 			},
 			cli.IntFlag{
-				Name:  "smtp-port",
+				Name:  "smtp-in-port",
 				Value: 2525,
-				Usage: "`PORT` for the SMTP server",
+				Usage: "`SMTP_IN_PORT` on which the service will listen for incoming mails",
+			},
+			cli.IntFlag{
+				Name:  "smtp-out-port",
+				Value: 25,
+				Usage: "`SMTP_OUT_PORT` of the SMTP server where outgoing mails will be sent to",
+			},
+			cli.StringFlag{
+				Name:  "smtp-out-host",
+				Value: "localhost",
+				Usage: "`SMTP_HOST` of the SMTP server where outgoing mails will be sent to",
 			},
 		},
 		privateKeyFlags...,

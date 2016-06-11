@@ -6,9 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/mail"
 	"github.com/TNG/gpg-validation-server/storage"
 )
@@ -45,48 +43,34 @@ func NonceFromString(nonceString string) (nonce [NonceLength]byte, err error) {
 }
 
 // ConfirmNonce checks the given nonce, and if there is associated information, sends an email with the signed key
-func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter) error {
+func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil mail.GpgUtility) (*mail.OutgoingMail, error) {
+	if gpgUtil == nil {
+		return nil, fmt.Errorf("Skipping nonce confirmation, as gpgUtil is not available.")
+	}
+
+	if store == nil {
+		return nil, fmt.Errorf("Skipping nonce confirmation, as store is not available.")
+	}
 	requestInfo := store.Get(nonce)
 
 	if requestInfo == nil {
-		return fmt.Errorf("Nonce %v not found.", hex.EncodeToString(nonce[:]))
+		return nil, fmt.Errorf("Cannot confirm nonce, %v not found.", hex.EncodeToString(nonce[:]))
 	}
 
-	log.Printf("Correct nonce received for Identity '%v' of Key %v.", requestInfo.Email, requestInfo.Key.PrimaryKey.KeyIdString())
-
-	path := "test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc"
-	keyFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	gpg, err := gpg.NewGPG(keyFile, "validation")
-	if err != nil {
-		return err
-	}
+	log.Printf("Signing key %v of '%v'.", requestInfo.Key.PrimaryKey.KeyIdString(), requestInfo.Email)
 
 	buf := bytes.Buffer{}
-	err = gpg.SignUserID(requestInfo.Email, requestInfo.Key, &buf)
+	err := gpgUtil.SignUserID(requestInfo.Email, requestInfo.Key, &buf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	mail := mail.OutgoingMail{
 		Message:        "Here is your signed key!",
 		RecipientEmail: requestInfo.Email,
 		RecipientKey:   requestInfo.Key,
 		Attachment:     buf.Bytes(),
-		GPG:            gpg,
-	}
-	mailBytes, err := mail.Bytes()
-	if err != nil {
-		return err
+		GPG:            gpgUtil,
 	}
 
-	log.Println(string(mailBytes))
-	file, err := os.Create("result.eml")
-	if err != nil {
-		return err
-	}
-	defer func() { _ = file.Close() }()
-	_, err = file.Write(mailBytes)
-	return err
+	return &mail, nil
 }

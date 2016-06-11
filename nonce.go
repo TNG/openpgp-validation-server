@@ -19,10 +19,7 @@ func serveNonceConfirmer(address string) error {
 	go func() {
 		for {
 			nonce := <-nonceChan
-			err := validator.ConfirmNonce(nonce, store)
-			if err != nil {
-				log.Printf("Cannot confirm nonce: %v", err)
-			}
+			go handleNonceConfirmation(nonce)
 		}
 	}()
 	http.HandleFunc("/confirm/", func(w http.ResponseWriter, r *http.Request) {
@@ -46,4 +43,14 @@ func serveNonceConfirmer(address string) error {
 		nonceChan <- nonce
 	})
 	return http.ListenAndServe(address, nil)
+}
+
+func handleNonceConfirmation(nonce [validator.NonceLength]byte) {
+	responseMail, err := validator.ConfirmNonce(nonce, store, gpgUtil)
+	if err != nil {
+		log.Printf("Cannot confirm nonce: %v\n", err)
+		return
+	}
+
+	sendOutgoingMail("signature", responseMail)
 }

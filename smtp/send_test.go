@@ -62,7 +62,7 @@ func TestSingleServerSendMailer(t *testing.T) {
 	runMailServer(resultChannel)
 
 	time.Sleep(1 * time.Second) // TODO Better synchronisation
-	err := mailer.SendMail(mail)
+	err := mailer.SendMail(&mail)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestSingleServerSendMailer(t *testing.T) {
 func TestSingleServerSendMailerFail(t *testing.T) {
 	mailer := SingleServerSendMailer{"127.0.0.1:2527"}
 	mail := MailEnvelope{"test@server.local", []string{"Fail Server"}, []byte("Subject: Here is your mail!\n\nContent of mail.")}
-	err := mailer.SendMail(mail)
+	err := mailer.SendMail(&mail)
 	if !strings.Contains(err.Error(), "connection refused") {
 		log.Fatal(err)
 	}

@@ -52,11 +52,12 @@ func (entity *MimeEntity) GetSender() string {
 	return entity.getHeader("From", "")
 }
 
-// GpgUtility is required by mail.Parser to check signatures and decrypt mails,
+// GpgUtility is required required to manage signatures and mail encryption
 type GpgUtility interface {
 	CheckMessageSignature(message io.Reader, signature io.Reader, checkedSignerKey gpg.Key) error
 	ReadKey(r io.Reader) (gpg.Key, error)
 	EncryptMessage(output io.Writer, recipient gpg.Key) (plaintext io.WriteCloser, err error)
+	SignUserID(signedEMail string, pubkey gpg.Key, w io.Writer) error
 }
 
 // Parser parses MIME mails.

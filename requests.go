@@ -13,43 +13,63 @@ import (
 	"github.com/TNG/gpg-validation-server/validator"
 )
 
-func serveSMTPRequestReceiver(host string, gpgUtil mail.GpgUtility) {
-	smtpServer := smtp.NewServer(host, getIncomingMailEnvelopeHandler(gpgUtil))
+func serveSMTPRequestReceiver(host string) {
+	smtpServer := smtp.NewServer(host, getIncomingMailEnvelopeHandler())
 	smtpServer.Run()
 }
 
-func getIncomingMailEnvelopeHandler(gpgUtil mail.GpgUtility) func(*smtp.MailEnvelope) {
+func getIncomingMailEnvelopeHandler() func(*smtp.MailEnvelope) {
 	return func(incomingMail *smtp.MailEnvelope) {
-		handleIncomingMailEnvelope(incomingMail, gpgUtil)
+		handleIncomingMailEnvelope(incomingMail)
 	}
 }
 
-func getIncomingMailHandler(gpgUtil mail.GpgUtility) func(io.Reader) {
+func getIncomingMailHandler() func(io.Reader) {
 	return func(incomingMail io.Reader) {
-		handleIncomingMail(incomingMail, gpgUtil)
+		handleIncomingMail(incomingMail)
 	}
 }
 
-func handleIncomingMailEnvelope(incomingMail *smtp.MailEnvelope, gpgUtil mail.GpgUtility) {
-	handleIncomingMail(bytes.NewReader(incomingMail.Content), gpgUtil)
+func handleIncomingMailEnvelope(incomingMail *smtp.MailEnvelope) {
+	handleIncomingMail(bytes.NewReader(incomingMail.Content))
 }
 
-func handleIncomingMail(incomingMail io.Reader, gpgUtil mail.GpgUtility) {
+func handleIncomingMail(incomingMail io.Reader) {
+	if gpgUtil == nil {
+		log.Panicf("Missing gpg init!")
+	}
+
 	for _, responseMail := range validator.HandleMail(incomingMail, gpgUtil, store) {
-		responseBytes, err := responseMail.Bytes()
+		sendOutgoingMail("nonce", &responseMail)
+	}
+}
+
+func sendOutgoingMail(mailType string, mail *mail.OutgoingMail) {
+	content, err := mail.Bytes()
+	if err != nil {
+		log.Printf("Cannot construct %s email: %v\n", mailType, err)
+		return
+	}
+	file, err := os.Create(fmt.Sprintf("%s_%d_%s.eml", mailType, time.Now().Unix(), mail.RecipientEmail))
+	if err != nil {
+		log.Printf("Cannot create %s email: %v\n", mailType, err)
+		return
+	}
+	defer func(f *os.File) { _ = f.Close() }(file) // Don't access closure in func-body, when using 'defer' in loop.
+	_, err = file.Write(content)
+	if err != nil {
+		log.Printf("Cannot write %s email: %v\n", mailType, err)
+		return
+	}
+
+	if mailSender != nil {
+		err = mailSender.SendMail(&smtp.MailEnvelope{
+			From:    mail.From(),
+			To:      []string{mail.RecipientEmail},
+			Content: content,
+		})
 		if err != nil {
-			log.Printf("Error constructing return email: %v\n", err)
-			return
-		}
-		file, err := os.Create(fmt.Sprintf("nonce_%d_%s.eml", time.Now().Unix(), responseMail.RecipientEmail))
-		if err != nil {
-			log.Printf("Error creating return email: %v\n", err)
-			return
-		}
-		defer func(f *os.File) { _ = f.Close() }(file) // Don't access closure in func-body, when using 'defer' in loop.
-		_, err = file.Write(responseBytes)
-		if err != nil {
-			log.Printf("Error writing return email: %v\n", err)
+			log.Printf("Cannot send %s mail to %s: %v\n", mailType, mail.RecipientEmail, err)
 			return
 		}
 	}

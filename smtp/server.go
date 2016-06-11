@@ -22,6 +22,7 @@ func NewServer(Address string, Handler Handler) *MailServer {
 }
 
 func (server *MailServer) mailHandler(origin net.Addr, fromAddress string, toAddresses []string, data []byte) {
+	log.Printf("Incoming mail Origin: %v From: %v To: %v\n", origin, fromAddress, toAddresses)
 	mail := MailEnvelope{fromAddress, toAddresses, data}
 	server.Handler(&mail)
 }

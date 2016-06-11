@@ -42,14 +42,21 @@ func (entity *MimeEntity) getHeader(name, defaultValue string) string {
 	return values[0]
 }
 
-func (entity *MimeEntity) getSubject() string {
+// GetSubject returns the value of the "Subject" header.
+func (entity *MimeEntity) GetSubject() string {
 	return entity.getHeader("Subject", "")
+}
+
+// GetSender returns the value of the "From" header.
+func (entity *MimeEntity) GetSender() string {
+	return entity.getHeader("From", "")
 }
 
 // GpgUtility is required by mail.Parser to check signatures and decrypt mails,
 type GpgUtility interface {
 	CheckMessageSignature(message io.Reader, signature io.Reader, checkedSignerKey gpg.Key) error
 	ReadKey(r io.Reader) (gpg.Key, error)
+	EncryptMessage(output io.Writer, recipient gpg.Key) (plaintext io.WriteCloser, err error)
 }
 
 // Parser parses MIME mails.

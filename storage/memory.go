@@ -13,7 +13,7 @@ type memoryStore struct {
 }
 
 // Get returns the openpgp Entity saved under the given nonce
-func (s memoryStore) Get(nonce [32]byte) *RequestInfo {
+func (s *memoryStore) Get(nonce [32]byte) *RequestInfo {
 	return s.store[nonce]
 }
 

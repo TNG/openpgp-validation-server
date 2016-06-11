@@ -2,6 +2,7 @@ package mail
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"time"
 
@@ -13,7 +14,7 @@ type MessageEncrypter interface {
 	EncryptMessage(output io.Writer, recipientKey gpg.Key) (plaintext io.WriteCloser, err error)
 }
 
-// OutgoingMail describes the contents of the mail to be sent (WIP)
+// OutgoingMail describes the contents of the mail to be sent
 type OutgoingMail struct {
 	Message        string
 	RecipientEmail string
@@ -35,43 +36,58 @@ func (m OutgoingMail) Bytes() ([]byte, error) {
 		"X-Mailer":            "github.com/TNG/gpg-validation-server",
 		"Content-Description": "OpenPGP encrypted message",
 	})
-	err := empw.WritePGPMIMEVersion()
-	if err != nil {
+
+	if err := empw.WritePGPMIMEVersion(); err != nil {
 		return nil, err
 	}
+
 	partWriter, err := empw.WriteInlineFile("encrypted.asc", "application/octet-stream", "OpenPGP encrypted message")
 	if err != nil {
 		return nil, err
 	}
+
 	plaintext, err := m.GPG.EncryptMessage(partWriter, m.RecipientKey)
 	if err != nil {
 		return nil, err
 	}
+
 	encryptedMultipartWriter := NewEncodingMultipartWriter(plaintext, "mixed", "", nil)
-	err = encryptedMultipartWriter.WritePlainText(m.Message)
-	if err != nil {
+
+	if err = encryptedMultipartWriter.WritePlainText(m.Message); err != nil {
 		return nil, err
 	}
 
-	encryptedKeyWriter, err := encryptedMultipartWriter.WriteAttachedFile("your_key.asc", "application/pgp-keys", "Your PGP Key")
-	if err != nil {
+	if err = m.handleAttachment(encryptedMultipartWriter); err != nil {
 		return nil, err
 	}
-	_, err = encryptedKeyWriter.Write(m.Attachment)
-	if err != nil {
+
+	// Close all writers in the correct order:
+	if err = encryptedMultipartWriter.Close(); err != nil {
 		return nil, err
 	}
-	err = encryptedMultipartWriter.Close()
-	if err != nil {
+	if err = plaintext.Close(); err != nil {
 		return nil, err
 	}
-	err = plaintext.Close()
-	if err != nil {
+	if err = empw.Close(); err != nil {
 		return nil, err
 	}
-	err = empw.Close()
-	if err != nil {
-		return nil, err
-	}
+
 	return w.Bytes(), nil
+}
+
+func (m OutgoingMail) handleAttachment(w *EncodingMultipartWriter) error {
+	if m.Attachment == nil {
+		return nil
+	}
+
+	attachmentWriter, err := w.WriteAttachedFile("your_key.asc", "application/pgp-keys", "Your PGP Key")
+	if err != nil {
+		return fmt.Errorf("Could not create attachment: %v", err)
+	}
+	_, err = attachmentWriter.Write(m.Attachment)
+	if err != nil {
+		return fmt.Errorf("Could not write attachment: %v", err)
+	}
+
+	return nil
 }

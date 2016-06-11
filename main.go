@@ -22,7 +22,7 @@ const (
 var (
 	gpgUtil    mail.GpgUtility       // This service is mandatory.
 	store      storage.GetSetDeleter // This service is optional, when not available no data will be stored.
-	mailSender smtp.MailSender       // This service is optional, when not available no outgoing email will be sent.
+	mailSender smtp.MailSender       // This service is optional, when not available no outgoing mail will be sent.
 )
 
 func initGpgUtil(c *cli.Context) error {
@@ -144,7 +144,7 @@ func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.Exi
 var subCommands = []cli.Command{
 	{
 		Name:   "process-mail",
-		Usage:  "process an incoming email",
+		Usage:  "process an incoming mail",
 		Action: cliErrorHandler(processMailAction),
 		Flags: append(
 			[]cli.Flag{

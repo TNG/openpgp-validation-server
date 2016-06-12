@@ -60,7 +60,7 @@ func sendOutgoingMail(mailType string, mail *mail.OutgoingMail) (success bool) {
 		log.Printf("Cannot create %s email: %v\n", mailType, err)
 		return
 	}
-	defer func(f *os.File) { _ = f.Close() }(file) // Don't access closure in func-body, when using 'defer' in loop.
+	defer func() { _ = file.Close() }()
 	_, err = file.Write(content)
 	if err != nil {
 		log.Printf("Cannot write %s email: %v\n", mailType, err)

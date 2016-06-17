@@ -69,7 +69,7 @@ func sendOutgoingMail(mailType string, mail *mail.OutgoingMail) (success bool) {
 
 	if mailSender != nil {
 		err = mailSender.SendMail(&smtp.MailEnvelope{
-			From:    mail.From(),
+			From:    smtpMailFrom,
 			To:      []string{mail.RecipientEmail},
 			Content: content,
 		})

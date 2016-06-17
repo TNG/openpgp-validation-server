@@ -25,6 +25,8 @@ var (
 	mailSender smtp.MailSender       // This service is optional, when not available no outgoing mail will be sent.
 )
 
+var smtpMailFrom string
+
 func initGpgUtil(c *cli.Context) error {
 	privateKeyPath := c.String("private-key")
 	if privateKeyPath == "" {
@@ -61,6 +63,9 @@ func initGlobalServices(c *cli.Context) error {
 	}
 
 	store = storage.NewMemoryStore()
+
+	smtpMailFrom = c.String("mail-from")
+	log.Printf("Sending mail from '%s'", smtpMailFrom)
 
 	smtpOutHost := fmt.Sprintf("%v:%v", c.String("smtp-out-host"), c.Int("smtp-out-port"))
 	log.Println("Using outgoing SMTP server at: ", smtpOutHost)
@@ -223,6 +228,11 @@ func RunApp(args []string) {
 				Name:  "smtp-out-host",
 				Value: "localhost",
 				Usage: "`SMTP_HOST` of the SMTP server where outgoing mails will be sent to",
+			},
+			cli.StringFlag{
+				Name:  "mail-from",
+				Value: "gpg-validation-server@server.local",
+				Usage: "`MAIL_FROM` of outgoing mails. This is NOT the FROM header of the mail.",
 			},
 		},
 		privateKeyFlags...,

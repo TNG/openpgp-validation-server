@@ -22,11 +22,12 @@ func NewServer(Address string, Handler Handler) *MailServer {
 }
 
 func (server *MailServer) mailHandler(origin net.Addr, fromAddress string, toAddresses []string, data []byte) {
+	log.Printf("Incoming mail Origin: %v From: %v To: %v\n", origin, fromAddress, toAddresses)
 	mail := MailEnvelope{fromAddress, toAddresses, data}
 	server.Handler(&mail)
 }
 
 // Run starts a goroutine which listens and processes mail as it arrives.
 func (server *MailServer) Run() {
-	go log.Fatal(smtpd.ListenAndServe(server.Address, server.mailHandler, "gpg-validation-server", ""))
+	go log.Panic(smtpd.ListenAndServe(server.Address, server.mailHandler, "gpg-validation-server", ""))
 }

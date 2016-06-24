@@ -27,7 +27,7 @@ func TestReceiveMail(t *testing.T) {
 	message := []byte("QWERTYIOP")
 	mailer := SingleServerSendMailer{Server: "127.0.0.1:2525"}
 	mail := MailEnvelope{expectedFrom, []string{expectedToAddress}, message}
-	err := mailer.SendMail(mail)
+	err := mailer.SendMail(&mail)
 	if err != nil {
 		log.Fatal(err)
 	}

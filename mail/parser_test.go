@@ -233,6 +233,14 @@ func (mockGpg *MockGpg) ReadKey(r io.Reader) (gpg.Key, error) {
 	return openpgp.NewEntity("mock", "", "mock@server.local", nil)
 }
 
+func (mockGpg *MockGpg) EncryptMessage(output io.Writer, recipientKey gpg.Key) (plaintext io.WriteCloser, err error) {
+	panic("Don't call me here!")
+}
+
+func (mockGpg *MockGpg) SignUserID(signedEMail string, pubkey gpg.Key, w io.Writer) error {
+	panic("Don't call me here!")
+}
+
 func TestParseMultipartSigned(t *testing.T) {
 	innerText := createMultipart("innerBoundary").
 		withPart("text/plain", "Hello there!", nil).

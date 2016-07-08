@@ -48,7 +48,6 @@ func NewGPG(serverPrivateKey io.Reader, passphrase string) (*GPG, error) {
 }
 
 // ReadKey reads a PGP public or private key from the given reader.
-// This is exposed through
 func (gpg *GPG) ReadKey(r io.Reader) (Key, error) {
 	return readKey(r)
 }
@@ -116,7 +115,11 @@ func (gpg *GPG) EncryptMessage(output io.Writer, recipient Key) (plaintext io.Wr
 func (gpg *GPG) DecryptSignedMessage(message io.Reader, output io.Writer, senderPublicKey Key) error {
 	keyRing := openpgp.EntityList([]*openpgp.Entity{gpg.serverEntity, senderPublicKey})
 
-	md, err := openpgp.ReadMessage(message, keyRing, nil, nil)
+	block, err := armor.Decode(message)
+	if err != nil {
+		return err
+	}
+	md, err := openpgp.ReadMessage(block.Body, keyRing, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -142,4 +145,22 @@ func (gpg *GPG) DecryptSignedMessage(message io.Reader, output io.Writer, sender
 	}
 
 	return nil
+}
+
+// DecryptMessage decrypts an encrypted message sent to server, but does not check the signature. It writes the plain text to the output
+func (gpg *GPG) DecryptMessage(message io.Reader) (io.Reader, error) {
+	keyRing := openpgp.EntityList([]*openpgp.Entity{gpg.serverEntity})
+
+	block, err := armor.Decode(message)
+	if err != nil {
+		return nil, err
+	}
+	md, err := openpgp.ReadMessage(block.Body, keyRing, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !md.IsEncrypted {
+		return nil, ErrMessageNotEncrypted
+	}
+	return md.UnverifiedBody, nil
 }

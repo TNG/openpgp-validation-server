@@ -36,7 +36,12 @@ func initGpgUtil(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Cannot open private key file '%s': %s", privateKeyPath, err)
 	}
-	defer func() { _ = privateKeyInput.Close() }()
+	defer func() {
+		err = privateKeyInput.Close()
+		if err != nil {
+			log.Fatalf("Close of private key file '%s' failed: %s", privateKeyPath, err)
+		}
+	}()
 
 	util, err := gpg.NewGPG(privateKeyInput, c.String("passphrase"))
 	if err != nil {

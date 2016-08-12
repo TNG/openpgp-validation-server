@@ -89,14 +89,12 @@ func (builder *MultipartBuilder) build() string {
 
 func TestGetMimeMediaTypeFromHeader(t *testing.T) {
 	header := textproto.MIMEHeader{"Content-Type": {"foo; param=bar", "stuff"}}
-	mediaType, err := getMimeMediaTypeFromHeader(header, "Content-Type", "")
-	assert.NoError(t, err)
+	mediaType := getMimeMediaType(header, "Content-Type")
 	assert.Equal(t, "foo", mediaType.Value)
 	assert.Equal(t, 1, len(mediaType.Params))
 	assert.Equal(t, "bar", mediaType.Params["param"])
-	mediaType, err = getMimeMediaTypeFromHeader(header, "key", "default")
-	assert.NoError(t, err)
-	assert.Equal(t, "default", mediaType.Value)
+	mediaType = getMimeMediaType(header, "key")
+	assert.Equal(t, "", mediaType.Value)
 }
 
 func TestParseHeaders(t *testing.T) {
@@ -238,6 +236,14 @@ func (mockGpg *MockGpg) EncryptMessage(output io.Writer, recipientKey gpg.Key) (
 }
 
 func (mockGpg *MockGpg) SignUserID(signedEMail string, pubkey gpg.Key, w io.Writer) error {
+	panic("Don't call me here!")
+}
+
+func (mockGpg *MockGpg) DecryptMessage(message io.Reader) (result io.Reader, err error) {
+	panic("Don't call me here!")
+}
+
+func (mockGpg *MockGpg) DecryptSignedMessage(message io.Reader, output io.Writer, signerKey gpg.Key) error {
 	panic("Don't call me here!")
 }
 

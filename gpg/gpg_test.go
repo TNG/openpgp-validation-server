@@ -256,7 +256,13 @@ func makeEncryptedMessage(t *testing.T, messageBytes []byte, signed bool) *bytes
 	err = w.Close()
 	require.NoError(t, err)
 
-	return cipherTextBuffer
+	armorBuffer := new(bytes.Buffer)
+	w, err = armor.Encode(armorBuffer, "ASCII ARMOR", map[string]string{})
+	_, err = w.Write(cipherTextBuffer.Bytes())
+	require.NoError(t, err)
+	err = w.Close()
+	require.NoError(t, err)
+	return armorBuffer
 }
 
 func TestGPGDecryptSignedMessage(t *testing.T) {

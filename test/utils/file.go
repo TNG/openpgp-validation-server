@@ -14,7 +14,10 @@ func Open(t *testing.T, path string) (file *os.File, cleanup func()) {
 	require.NoError(t, err, "Failed to open file:", path)
 
 	cleanup = func() {
-		_ = file.Close()
+		err = file.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return

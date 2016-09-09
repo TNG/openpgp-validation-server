@@ -57,7 +57,7 @@ func runMailServer(resultChannel chan string) {
 
 func TestSingleServerSendMailer(t *testing.T) {
 	resultChannel := make(chan string)
-	mailer := SingleServerSendMailer{"127.0.0.1:2526"}
+	mailer := NewSingleServerSendMailer("127.0.0.1:2526")
 	mail := MailEnvelope{"test@server.local", []string{"Test Server"}, []byte("Subject: Here is your mail!\n\nContent of mail.")}
 	runMailServer(resultChannel)
 

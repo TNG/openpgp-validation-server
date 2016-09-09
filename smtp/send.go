@@ -19,7 +19,7 @@ func NewSingleServerSendMailer(Server string) *SingleServerSendMailer {
 	return &SingleServerSendMailer{Server}
 }
 
-// SendMail tries to send the given mail envelope via SMTP localhost
+// SendMail tries to send the given mail envelope via the configured SMTP server
 func (mailer SingleServerSendMailer) SendMail(envelope *MailEnvelope) (err error) {
 	// Connect to the remote SMTP server.
 	c, err := smtp.Dial(mailer.Server)

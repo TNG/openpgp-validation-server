@@ -4,12 +4,12 @@ go:
   - 1.6
 
 install:
-  - ./install.sh
+  - ./install_metalinter.sh
 
 script:
-  - ./enforce_gofmt.sh
-  - ./test.sh
-  - ./lint.sh
+  - ./lint_gofmt.sh
+  - ./run_tests.sh
+  - ./lint_metalinter.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

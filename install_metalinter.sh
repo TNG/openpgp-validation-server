@@ -3,6 +3,6 @@
 set -e
 
 go get -u github.com/alecthomas/gometalinter
-gometalinter --install --update
+gometalinter --install
 
 go get -t -v ./...

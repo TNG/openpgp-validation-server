@@ -258,6 +258,7 @@ func makeEncryptedMessage(t *testing.T, messageBytes []byte, signed bool) *bytes
 
 	armorBuffer := new(bytes.Buffer)
 	w, err = armor.Encode(armorBuffer, "ASCII ARMOR", map[string]string{})
+	require.NoError(t, err)
 	_, err = w.Write(cipherTextBuffer.Bytes())
 	require.NoError(t, err)
 	err = w.Close()

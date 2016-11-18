@@ -133,8 +133,8 @@ func confirmNonceAction(c *cli.Context) error {
 	return nil
 }
 
-func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) cli.ExitCoder {
-	return func(c *cli.Context) (e cli.ExitCoder) {
+func cliErrorHandler(action func(*cli.Context) error) func(*cli.Context) error {
+	return func(c *cli.Context) (e error) {
 		defer func() {
 			if r := recover(); r != nil {
 				debug.PrintStack()

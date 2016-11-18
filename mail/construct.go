@@ -84,8 +84,8 @@ func (m OutgoingMail) handleAttachment(w *EncodingMultipartWriter) error {
 	if m.Attachment == nil {
 		return nil
 	}
-
-	attachmentWriter, err := w.WriteAttachedFile("your_key.asc", "application/pgp-keys", "Your PGP Key")
+	fileName := "0x" + m.RecipientKey.PrimaryKey.KeyIdString() + ".asc"
+	attachmentWriter, err := w.WriteAttachedFile(fileName, "application/pgp-keys", "Your PGP Key")
 	if err != nil {
 		return fmt.Errorf("Could not create attachment: %v", err)
 	}

@@ -87,12 +87,40 @@ func signClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, se
 		return errors.New(fmt.Sprint("Client does not have identity:", signedIdentity))
 	}
 
-	err := clientEntity.SignIdentity(signedIdentity, serverEntity, nil)
+	err := signIdentity(signedIdentity, clientEntity, serverEntity, nil)
 	if err != nil {
 		return err
 	}
 	err = exportArmoredPublicKey(clientEntity, w)
 	return err
+}
+
+func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Config) error {
+	if signer.PrivateKey == nil {
+		return errors.New("signing Entity must have a private key")
+	}
+	if signer.PrivateKey.Encrypted {
+		return errors.New("signing Entity's private key must be decrypted")
+	}
+	ident, ok := e.Identities[identity]
+	if !ok {
+		return errors.New("given identity string not found in Entity")
+	}
+
+	lifetime := uint32((3600 * 24 * 365) / 2)
+	sig := &packet.Signature{
+		SigType:         packet.SigTypeGenericCert,
+		PubKeyAlgo:      signer.PrivateKey.PubKeyAlgo,
+		Hash:            config.Hash(),
+		CreationTime:    config.Now(),
+		IssuerKeyId:     &signer.PrivateKey.KeyId,
+		SigLifetimeSecs: &lifetime,
+	}
+	if err := sig.SignUserId(identity, e.PrimaryKey, signer.PrivateKey, config); err != nil {
+		return err
+	}
+	ident.Signatures = append(ident.Signatures, sig)
+	return nil
 }
 
 // exportArmoredPublicKey exports the public key of an entity with armor as ASCII.

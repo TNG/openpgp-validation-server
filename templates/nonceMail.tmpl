@@ -1,12 +1,15 @@
 Hi!
 
-Please confirm the validation of your GPG key by opening the following link in your web browser:
+We received a mail from "{{.Requester}}" asking to validate that the GPG Key
+with the fingerprint "{{.Fingerprint}}" belongs to you.
+
+Since you were able to decrypt this message, this is very probably the case.
+To confirm that you are owner of this key, click here:
+
 http://localhost:8080/confirm/{{.Nonce}}
 
-After the confirmation, we will send you your signed GPG key.
-
-This validation was requested by "{{.Requester}}".
-If you did not request this, please ignore this email.
+After the confirmation, we will sign your GPG key and send it to you. We will
+not upload it to any keyservers.
 
 --
 GPG Validation Server

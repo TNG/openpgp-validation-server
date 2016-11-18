@@ -235,10 +235,6 @@ func (mockGpg *MockGpg) EncryptMessage(output io.Writer, recipientKey gpg.Key) (
 	panic("Don't call me here!")
 }
 
-func (mockGpg *MockGpg) SignUserID(signedEMail string, pubkey gpg.Key, w io.Writer) error {
-	panic("Don't call me here!")
-}
-
 func (mockGpg *MockGpg) DecryptMessage(message io.Reader) (result io.Reader, err error) {
 	panic("Don't call me here!")
 }

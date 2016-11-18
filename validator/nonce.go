@@ -8,6 +8,7 @@ import (
 	"log"
 	"text/template"
 
+	"github.com/TNG/gpg-validation-server/gpg"
 	"github.com/TNG/gpg-validation-server/mail"
 	"github.com/TNG/gpg-validation-server/storage"
 )
@@ -46,7 +47,7 @@ func NonceFromString(nonceString string) (nonce [NonceLength]byte, err error) {
 }
 
 // ConfirmNonce checks the given nonce, and if there is associated information, sends an email with the signed key
-func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil mail.GpgUtility) (*mail.OutgoingMail, error) {
+func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil *gpg.GPG) (*mail.OutgoingMail, error) {
 	if gpgUtil == nil {
 		return nil, fmt.Errorf("Skipping nonce confirmation, as gpgUtil is not available.")
 	}
@@ -67,7 +68,7 @@ func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil 
 	if err != nil {
 		return nil, err
 	}
-	message := getSignedKeyMessage()
+	message := getSignedKeyMessage(requestInfo.Key.PrimaryKey.KeyIdString())
 
 	mail := mail.OutgoingMail{
 		Message:        message,
@@ -80,9 +81,11 @@ func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil 
 	return &mail, nil
 }
 
-func getSignedKeyMessage() string {
+func getSignedKeyMessage(fingerprint string) string {
 	message := new(bytes.Buffer)
-	err := signedKeyMessage.Execute(message, struct{}{})
+	err := signedKeyMessage.Execute(message, struct{ Fingerprint string }{
+		Fingerprint: fingerprint,
+	})
 	if err != nil {
 		log.Panicf("Cannot generate signed-key message: %v\n", err)
 		return ""

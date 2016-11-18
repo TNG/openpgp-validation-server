@@ -1,9 +1,11 @@
 package mail
 
 import (
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/textproto"
+	"unicode"
 )
 
 // EncodingMultipartWriter contains headers and information needed to write a MIME Multipart message
@@ -15,6 +17,18 @@ type EncodingMultipartWriter struct {
 }
 
 const newline = "\r\n"
+
+func isPrintableASCIIString(s string) bool {
+	for _, c := range s {
+		if c > unicode.MaxASCII {
+			return false
+		}
+		if !unicode.IsPrint(c) && c != '\n' && c != '\r' {
+
+		}
+	}
+	return true
+}
 
 // NewEncodingMultipartWriter returns a new encoding multipart writer of the given type writing to w.
 // The multitype can be for example "mixed", "alternative", or "encrypted".
@@ -48,8 +62,11 @@ func (w *EncodingMultipartWriter) checkWriteHeaders() error {
 	}
 	w.headersWritten = true
 	for key, value := range w.headers {
-		// TODO: Ensure that headers are 7bit
-		_, err := w.out.Write([]byte(key + ": " + value + newline))
+		header := key + ": " + value + newline
+		if !isPrintableASCIIString(header) {
+			return errors.New("Non-printable or non-ASCII characters in Header: " + header)
+		}
+		_, err := w.out.Write([]byte(header))
 		if err != nil {
 			return err
 		}
@@ -108,6 +125,9 @@ func (w *EncodingMultipartWriter) WritePlainText(text string) error {
 	})
 	if err != nil {
 		return err
+	}
+	if !isPrintableASCIIString(text) {
+		return errors.New("Non-printable or non-ASCII characters in Text: " + text)
 	}
 	_, err = partWriter.Write([]byte(text))
 	return err

@@ -14,6 +14,18 @@ import (
 // Key is a reference to an OpenPGP entity containing some public keys
 type Key *openpgp.Entity
 
+// MarshalKey encodes the public parts of the given key into a byte array
+func MarshalKey(k *openpgp.Entity) ([]byte, error) {
+	b := new(bytes.Buffer)
+	err := k.Serialize(b)
+	return b.Bytes(), err
+}
+
+// UnmarshalKey reads a key from an ascii armor or binary encoding
+func UnmarshalKey(data []byte) (Key, error) {
+	return readKey(bytes.NewReader(data))
+}
+
 // readKey reads a PGP public or private key from the given reader
 func readKey(r io.Reader) (Key, error) {
 	return readEntityMaybeArmored(r)

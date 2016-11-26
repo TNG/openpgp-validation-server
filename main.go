@@ -66,7 +66,7 @@ func initGlobalServices(c *cli.Context) error {
 		return err
 	}
 
-	store = storage.NewMemoryStore()
+	store = storage.NewFileStore()
 
 	smtpMailFrom = c.String("mail-from")
 	log.Printf("Sending mail from '%s'", smtpMailFrom)

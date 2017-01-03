@@ -3,6 +3,7 @@ package gpg
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/openpgp"
 )
 
@@ -36,5 +37,7 @@ func verifySignatureTest(t *testing.T, signedIdentity string, signedClientEntity
 		if err != nil {
 			t.Error("Signature", index, "not valid:", err)
 		}
+
+		assert.Equal(t, uint32(15768000), *signature.SigLifetimeSecs, "Invalid signature expiry")
 	}
 }

@@ -4,7 +4,7 @@ go:
   - 1.6
 
 install:
-  - ./install_metalinter.sh
+  - ./install_dependencies.sh
 
 script:
   - ./lint_gofmt.sh

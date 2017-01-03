@@ -7,7 +7,6 @@ import (
 	"runtime/debug"
 
 	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/mail"
 	"github.com/TNG/gpg-validation-server/smtp"
 	"github.com/TNG/gpg-validation-server/storage"
 	"github.com/TNG/gpg-validation-server/validator"
@@ -20,7 +19,7 @@ const (
 )
 
 var (
-	gpgUtil    mail.GpgUtility       // This service is mandatory.
+	gpgUtil    *gpg.GPG              // This service is mandatory.
 	store      storage.GetSetDeleter // This service is optional, when not available no data will be stored.
 	mailSender smtp.MailSender       // This service is optional, when not available no outgoing mail will be sent.
 )

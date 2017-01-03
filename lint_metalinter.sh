@@ -2,4 +2,4 @@
 
 set +e
 
-gometalinter --debug --deadline=240s ./...
+gometalinter --deadline=240s ./... "$@"

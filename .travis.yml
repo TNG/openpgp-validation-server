@@ -9,7 +9,7 @@ install:
 script:
   - ./lint_gofmt.sh
   - ./run_tests.sh
-  - ./lint_metalinter.sh
+  - ./lint_metalinter.sh --debug
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

@@ -5,13 +5,13 @@ set +e
 status=0
 pids=""
 
-./enforce_gofmt.sh &
+./lint_gofmt.sh &
 pids+="$! "
 
 go test -covermode=atomic ./... &  # Prefer short, human readable output of test results here
 pids+="$! "
 
-./lint.sh &
+./lint_metalinter.sh &
 pids+="$! "
 
 for pid in $pids; do

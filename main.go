@@ -11,7 +11,7 @@ import (
 	"github.com/TNG/gpg-validation-server/smtp"
 	"github.com/TNG/gpg-validation-server/storage"
 	"github.com/TNG/gpg-validation-server/validator"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 const (

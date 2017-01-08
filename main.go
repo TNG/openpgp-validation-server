@@ -6,10 +6,10 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/smtp"
-	"github.com/TNG/gpg-validation-server/storage"
-	"github.com/TNG/gpg-validation-server/validator"
+	"github.com/TNG/openpgp-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/smtp"
+	"github.com/TNG/openpgp-validation-server/storage"
+	"github.com/TNG/openpgp-validation-server/validator"
 	"github.com/urfave/cli"
 )
 

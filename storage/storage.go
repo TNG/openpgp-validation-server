@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/TNG/gpg-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/gpg"
 )
 
 const nonceLength = 32

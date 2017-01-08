@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/TNG/gpg-validation-server/validator"
+	"github.com/TNG/openpgp-validation-server/validator"
 )
 
 var (

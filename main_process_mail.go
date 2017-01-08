@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/TNG/gpg-validation-server/mail"
-	"github.com/TNG/gpg-validation-server/smtp"
-	"github.com/TNG/gpg-validation-server/validator"
+	"github.com/TNG/openpgp-validation-server/mail"
+	"github.com/TNG/openpgp-validation-server/smtp"
+	"github.com/TNG/openpgp-validation-server/validator"
 )
 
 func serveSMTPRequestReceiver(host string) {

@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/TNG/gpg-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/gpg"
 )
 
 // MessageEncrypter is a struct able to sign a message and encrypt it for the recipient key

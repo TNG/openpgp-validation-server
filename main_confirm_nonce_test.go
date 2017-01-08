@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/storage"
-	"github.com/TNG/gpg-validation-server/test/utils"
+	"github.com/TNG/openpgp-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/storage"
+	"github.com/TNG/openpgp-validation-server/test/utils"
 )
 
 func TestConfirmNonce(t *testing.T) {

@@ -3,8 +3,8 @@ package mail
 import (
 	"bytes"
 	"fmt"
-	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/test/utils"
+	"github.com/TNG/openpgp-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/test/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/openpgp"

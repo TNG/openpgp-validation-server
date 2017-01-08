@@ -8,9 +8,9 @@ import (
 	"log"
 	"text/template"
 
-	"github.com/TNG/gpg-validation-server/gpg"
-	"github.com/TNG/gpg-validation-server/mail"
-	"github.com/TNG/gpg-validation-server/storage"
+	"github.com/TNG/openpgp-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/mail"
+	"github.com/TNG/openpgp-validation-server/storage"
 )
 
 var signedKeyMessage = template.Must(template.ParseFiles("./templates/signedKeyMail.tmpl"))

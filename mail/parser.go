@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/TNG/gpg-validation-server/gpg"
+	"github.com/TNG/openpgp-validation-server/gpg"
 	"golang.org/x/net/html/charset"
 	"io"
 	"io/ioutil"

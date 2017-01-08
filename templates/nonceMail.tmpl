@@ -1,6 +1,6 @@
 Hi!
 
-We received a mail from "{{.Requester}}" asking to validate that the GPG Key
+We received a mail from "{{.Requester}}" asking to validate that the OpenPGP Key
 with the fingerprint "{{.Fingerprint}}" belongs to you.
 
 Since you were able to decrypt this message, this is very probably the case.
@@ -8,9 +8,9 @@ To confirm that you are owner of this key, click here:
 
 http://localhost:8080/confirm/{{.Nonce}}
 
-After the confirmation, we will sign your GPG key and send it to you. We will
+After the confirmation, we will sign your OpenPGP key and send it to you. We will
 not upload it to any keyservers.
 
 --
-GPG Validation Server
-https://github.com/TNG/gpg-validation-server
+OpenPGP Validation Server
+https://github.com/TNG/openpgp-validation-server

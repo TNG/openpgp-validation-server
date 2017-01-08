@@ -25,7 +25,7 @@ type OutgoingMail struct {
 
 // From returns the sender of the mail.
 func (m OutgoingMail) From() string {
-	return "Test GPG Validation Server <test-gpg-validation-server@server.local>"
+	return "Test OpenPGP Validation Server <test-openpgp-validation-server@server.local>"
 }
 
 // Bytes returns the given message as an OpenPGP/MIME encrypted and signed message (RFC 2440 and 3156)
@@ -36,9 +36,9 @@ func (m OutgoingMail) Bytes() ([]byte, error) {
 		"Date":                now.Format(time.RFC1123Z),
 		"From":                m.From(),
 		"To":                  m.RecipientEmail,
-		"Message-ID":          now.Format(time.RFC3339Nano) + "@gpg-validation.server.local>",
-		"Subject":             "GPG Key Validation",
-		"X-Mailer":            "github.com/TNG/gpg-validation-server",
+		"Message-ID":          now.Format(time.RFC3339Nano) + "@openpgp-validation.server.local>",
+		"Subject":             "OpenPGP Key Validation",
+		"X-Mailer":            "github.com/TNG/openpgp-validation-server",
 		"Content-Description": "OpenPGP encrypted message",
 	})
 

@@ -1,7 +1,7 @@
 Subject: Test multipart/signed
 Date: Fri, 13 May 2016 13:00:00 -0700
 From: Tests <server@server.local>
-To: TNG/gpg-validation-server <gpg-validation-server@noreply.github.com>
+To: TNG/openpgp-validation-server <openpgp-validation-server@noreply.github.com>
 Cc:
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;

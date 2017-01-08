@@ -23,7 +23,7 @@ _testmain.go
 *.test
 *.prof
 
-gpg-validation-server
+openpgp-validation-server
 
 .idea/
 

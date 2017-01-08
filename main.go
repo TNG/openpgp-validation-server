@@ -189,7 +189,7 @@ var privateKeyFlags = []cli.Flag{
 		Name:  "private-key",
 		Value: "./test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc.gpg",
 		// TODO Handle missing value, use better default
-		Usage: "`PRIVATE_KEY_PATH` to the private gpg key of the server",
+		Usage: "`PRIVATE_KEY_PATH` to the private OpenPGP key of the server",
 	},
 	cli.StringFlag{
 		Name:  "passphrase",
@@ -202,8 +202,8 @@ var privateKeyFlags = []cli.Flag{
 // RunApp starts the server with the provided arguments.
 func RunApp(args []string) {
 	app := cli.NewApp()
-	app.Name = "GPG Validation Service"
-	app.Usage = "Run a server that manages email verification and signs verified keys with the servers GPG key."
+	app.Name = "OpenPGP Validation Service"
+	app.Usage = "Run a server that manages email verification and signs verified keys with the servers OpenPGP key."
 	app.Commands = subCommands
 	app.Action = cliErrorHandler(appAction)
 	app.Flags = append(
@@ -235,7 +235,7 @@ func RunApp(args []string) {
 			},
 			cli.StringFlag{
 				Name:  "mail-from",
-				Value: "gpg-validation-server@server.local",
+				Value: "openpgp-validation-server@server.local",
 				Usage: "`MAIL_FROM` of outgoing mails. This is NOT the FROM header of the mail.",
 			},
 		},

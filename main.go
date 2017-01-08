@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/TNG/openpgp-validation-server/gpg"
 	"github.com/TNG/openpgp-validation-server/smtp"
@@ -51,22 +52,14 @@ func initGpgUtil(c *cli.Context) error {
 	return nil
 }
 
-func appAction(c *cli.Context) error {
-	if err := initGlobalServices(c); err != nil {
+func initGlobalServices(c *cli.Context) (err error) {
+	if err = initGpgUtil(c); err != nil {
 		return err
 	}
 
-	runServers(c)
-
-	return nil
-}
-
-func initGlobalServices(c *cli.Context) error {
-	if err := initGpgUtil(c); err != nil {
+	if store, err = storage.NewStore(c.String("storage")); err != nil {
 		return err
 	}
-
-	store = storage.NewFileStore()
 
 	smtpMailFrom = c.String("mail-from")
 	log.Printf("Sending mail from '%s'", smtpMailFrom)
@@ -78,7 +71,11 @@ func initGlobalServices(c *cli.Context) error {
 	return nil
 }
 
-func runServers(c *cli.Context) {
+func runServers(c *cli.Context) error {
+	if err := initGlobalServices(c); err != nil {
+		return err
+	}
+
 	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
 	smtpInHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-in-port"))
 
@@ -87,10 +84,11 @@ func runServers(c *cli.Context) {
 
 	log.Println("Setting up HTTP server listening at: ", httpHost)
 	log.Panic(serveNonceConfirmer(httpHost))
+
+	return nil
 }
 
-func processMailAction(c *cli.Context) error {
-	var err error
+func processMailAction(c *cli.Context) (err error) {
 	var inputMail *os.File
 
 	inputFilePath := c.String("file")
@@ -105,8 +103,7 @@ func processMailAction(c *cli.Context) error {
 		defer func() { _ = inputMail.Close() }()
 	}
 
-	err = initGpgUtil(c)
-	if err != nil {
+	if err = initGlobalServices(c); err != nil {
 		return err
 	}
 
@@ -117,7 +114,7 @@ func processMailAction(c *cli.Context) error {
 }
 
 func confirmNonceAction(c *cli.Context) error {
-	if err := initGpgUtil(c); err != nil {
+	if err := initGlobalServices(c); err != nil {
 		return err
 	}
 
@@ -164,7 +161,7 @@ var subCommands = []cli.Command{
 					Usage: "`FILE_PATH` of the mail file, omit to read from stdin",
 				},
 			},
-			privateKeyFlags...,
+			commonFlags...,
 		),
 	},
 	{
@@ -179,12 +176,12 @@ var subCommands = []cli.Command{
 					Usage: "String value of the Nonce",
 				},
 			},
-			privateKeyFlags...,
+			commonFlags...,
 		),
 	},
 }
 
-var privateKeyFlags = []cli.Flag{
+var commonFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "private-key",
 		Value: "./test/keys/test-gpg-validation@server.local (0x87144E5E) sec.asc.gpg",
@@ -197,6 +194,26 @@ var privateKeyFlags = []cli.Flag{
 		// TODO Handle missing value, use better default.
 		Usage: "`PASSPHRASE` of the private key",
 	},
+	cli.StringFlag{
+		Name:  "storage",
+		Value: "file",
+		Usage: fmt.Sprintf("Storage type, possible values: [%s]", strings.Join(storage.StorageTypes[:], ", ")),
+	},
+	cli.IntFlag{
+		Name:  "smtp-out-port",
+		Value: 25,
+		Usage: "`SMTP_OUT_PORT` of the SMTP server where outgoing mails will be sent to",
+	},
+	cli.StringFlag{
+		Name:  "smtp-out-host",
+		Value: "localhost",
+		Usage: "`SMTP_HOST` of the SMTP server where outgoing mails will be sent to",
+	},
+	cli.StringFlag{
+		Name:  "mail-from",
+		Value: "openpgp-validation-server@server.local",
+		Usage: "`MAIL_FROM` of outgoing mails. This is NOT the FROM header of the mail.",
+	},
 }
 
 // RunApp starts the server with the provided arguments.
@@ -205,7 +222,7 @@ func RunApp(args []string) {
 	app.Name = "OpenPGP Validation Service"
 	app.Usage = "Run a server that manages email verification and signs verified keys with the servers OpenPGP key."
 	app.Commands = subCommands
-	app.Action = cliErrorHandler(appAction)
+	app.Action = cliErrorHandler(runServers)
 	app.Flags = append(
 		[]cli.Flag{
 			cli.StringFlag{
@@ -218,33 +235,18 @@ func RunApp(args []string) {
 				Value: 8080,
 				Usage: "`PORT` for the HTTP nonce listener",
 			},
-			cli.IntFlag{
-				Name:  "smtp-in-port",
-				Value: 2525,
-				Usage: "`SMTP_IN_PORT` on which the service will listen for incoming mails",
-			},
-			cli.IntFlag{
-				Name:  "smtp-out-port",
-				Value: 25,
-				Usage: "`SMTP_OUT_PORT` of the SMTP server where outgoing mails will be sent to",
-			},
-			cli.StringFlag{
-				Name:  "smtp-out-host",
-				Value: "localhost",
-				Usage: "`SMTP_HOST` of the SMTP server where outgoing mails will be sent to",
-			},
-			cli.StringFlag{
-				Name:  "mail-from",
-				Value: "openpgp-validation-server@server.local",
-				Usage: "`MAIL_FROM` of outgoing mails. This is NOT the FROM header of the mail.",
-			},
 			cli.StringFlag{
 				Name:  "external-http-host",
 				Value: "localhost:8080",
 				Usage: "External HTTP host for the nonce validation",
 			},
+			cli.IntFlag{
+				Name:  "smtp-in-port",
+				Value: 2525,
+				Usage: "`SMTP_IN_PORT` on which the service will listen for incoming mails",
+			},
 		},
-		privateKeyFlags...,
+		commonFlags...,
 	)
 
 	if err := app.Run(args); err != nil {

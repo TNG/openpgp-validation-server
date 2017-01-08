@@ -45,9 +45,10 @@ func TestProcessMailPrivateKeyNotFound(t *testing.T) {
 	testMainWithArguments(t, errorExitCode, "process-mail", "--private-key", "does_not_exist")
 }
 
-func testProcessMail(t *testing.T, expectedExitCode int, file string) {
+func testProcessMail(t *testing.T, expectedExitCode int, file string, args ...string) {
 	filePath := fmt.Sprintf("./test/mails/%s", file)
-	testMainWithArguments(t, expectedExitCode, "process-mail", "--passphrase", "validation", "--file", filePath)
+	mainArgs := append([]string{"process-mail", "--passphrase", "validation", "--file", filePath}, args...)
+	testMainWithArguments(t, expectedExitCode, mainArgs...)
 }
 
 func TestProcessMailFilesSuccessfully(t *testing.T) {
@@ -60,4 +61,12 @@ func TestProcessMailFilesSuccessfully(t *testing.T) {
 
 func TestProcessFileError(t *testing.T) {
 	testProcessMail(t, errorExitCode, "invalid")
+}
+
+func TestProcessMailStorageTypes(t *testing.T) {
+	testProcessMail(t, okExitCode, "attachment.eml", "--storage", "none")
+	testProcessMail(t, okExitCode, "attachment.eml", "--storage", "memory")
+	testProcessMail(t, okExitCode, "attachment.eml", "--storage", "file")
+
+	testProcessMail(t, errorExitCode, "attachment.eml", "--storage", "invalid")
 }

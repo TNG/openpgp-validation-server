@@ -78,20 +78,12 @@ func initGlobalServices(c *cli.Context) error {
 	return nil
 }
 
-func getHTTPHost(c *cli.Context) string {
-	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
-	if c.Int("http-port") == 80 {
-		httpHost = c.String("host")
-	}
-	return httpHost
-}
-
 func runServers(c *cli.Context) {
-	httpHost := getHTTPHost(c)
+	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
 	smtpInHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-in-port"))
 
 	log.Println("Setting up SMTP server listening at: ", smtpInHost)
-	go serveSMTPRequestReceiver(smtpInHost, httpHost)
+	go serveSMTPRequestReceiver(smtpInHost, c.String("external-http-host"))
 
 	log.Println("Setting up HTTP server listening at: ", httpHost)
 	log.Panic(serveNonceConfirmer(httpHost))
@@ -118,8 +110,7 @@ func processMailAction(c *cli.Context) error {
 		return err
 	}
 
-	httpHost := getHTTPHost(c)
-	processMail := getIncomingMailHandler(httpHost)
+	processMail := getIncomingMailHandler(c.String("external-http-host"))
 	processMail(inputMail)
 
 	return nil
@@ -246,6 +237,11 @@ func RunApp(args []string) {
 				Name:  "mail-from",
 				Value: "openpgp-validation-server@server.local",
 				Usage: "`MAIL_FROM` of outgoing mails. This is NOT the FROM header of the mail.",
+			},
+			cli.StringFlag{
+				Name:  "external-http-host",
+				Value: "localhost:8080",
+				Usage: "External HTTP host for the nonce validation",
 			},
 		},
 		privateKeyFlags...,

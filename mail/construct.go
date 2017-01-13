@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/TNG/openpgp-validation-server/gpg"
@@ -33,11 +34,13 @@ func (m OutgoingMail) From() string {
 func (m OutgoingMail) Bytes() ([]byte, error) {
 	w := bytes.Buffer{}
 	now := time.Now()
+	identityParts := strings.Split(m.GPG.ServerIdentity(), "><@")
+	serverDomain := identityParts[len(identityParts)-1]
 	empw := NewEncodingMultipartWriter(&w, "encrypted", "application/pgp-encrypted", map[string]string{
 		"Date":                now.Format(time.RFC1123Z),
 		"From":                m.From(),
 		"To":                  m.RecipientEmail,
-		"Message-ID":          now.Format(time.RFC3339Nano) + "@openpgp-validation.server.local>",
+		"Message-ID":          "<" + now.Format(time.RFC3339Nano) + "@" + serverDomain + ">",
 		"Subject":             "OpenPGP Key Validation",
 		"X-Mailer":            "github.com/TNG/openpgp-validation-server",
 		"Content-Description": "OpenPGP encrypted message",

@@ -29,6 +29,14 @@ func newGPGtest(t *testing.T, path string) {
 	assert.Contains(t, gpg.serverEntity.Identities, expectedIdentity, "Could not find identity in serverEntity")
 }
 
+func TestServerIdentity(t *testing.T) {
+	file, cleanup := utils.Open(t, asciiKeyFileSecret)
+	defer cleanup()
+	gpg, err := NewGPG(file, passphrase)
+	require.NoError(t, err, "Failed to create GPG object")
+	assert.Equal(t, gpg.ServerIdentity(), expectedIdentity, "ServerIdentity gives wrong result")
+}
+
 func TestNewGPG(t *testing.T) {
 	for _, path := range [2]string{asciiKeyFileSecret, binaryKeyFileSecret} {
 		newGPGtest(t, path)

@@ -216,6 +216,10 @@ type MockGpg struct {
 	checked                            bool
 }
 
+func (mockGpg MockGpg) ServerIdentity() string {
+	return "Server <mail@server.local>"
+}
+
 func (mockGpg *MockGpg) CheckMessageSignature(message io.Reader, signature io.Reader, checkedSignerKey gpg.Key) error {
 	messageData, _ := ioutil.ReadAll(message)
 	signatureData, _ := ioutil.ReadAll(signature)

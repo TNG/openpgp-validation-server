@@ -164,3 +164,11 @@ func (gpg *GPG) DecryptMessage(message io.Reader) (io.Reader, error) {
 	}
 	return md.UnverifiedBody, nil
 }
+
+// ServerIdentity returns the full identity string for the server key in use
+func (gpg *GPG) ServerIdentity() string {
+	for key := range gpg.serverEntity.Identities {
+		return key
+	}
+	panic("No identity in server key")
+}

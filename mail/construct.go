@@ -12,6 +12,7 @@ import (
 // MessageEncrypter is a struct able to sign a message and encrypt it for the recipient key
 type MessageEncrypter interface {
 	EncryptMessage(output io.Writer, recipientKey gpg.Key) (plaintext io.WriteCloser, err error)
+	ServerIdentity() string
 }
 
 // OutgoingMail describes the contents of the mail to be sent
@@ -25,7 +26,7 @@ type OutgoingMail struct {
 
 // From returns the sender of the mail.
 func (m OutgoingMail) From() string {
-	return "Test OpenPGP Validation Server <test-openpgp-validation-server@server.local>"
+	return m.GPG.ServerIdentity()
 }
 
 // Bytes returns the given message as an OpenPGP/MIME encrypted and signed message (RFC 2440 and 3156)

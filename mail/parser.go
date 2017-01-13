@@ -59,6 +59,7 @@ type GpgUtility interface {
 	EncryptMessage(output io.Writer, recipient gpg.Key) (plaintext io.WriteCloser, err error)
 	DecryptMessage(message io.Reader) (result io.Reader, err error)
 	DecryptSignedMessage(message io.Reader, output io.Writer, signerKey gpg.Key) error
+	ServerIdentity() string
 }
 
 // Parser parses MIME mails.

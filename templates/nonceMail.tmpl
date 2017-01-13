@@ -6,7 +6,7 @@ with the fingerprint "{{.Fingerprint}}" belongs to you.
 Since you were able to decrypt this message, this is very probably the case.
 To confirm that you are owner of this key, click here:
 
-http://localhost:8080/confirm/{{.Nonce}}
+http://{{.Host}}/confirm/{{.Nonce}}
 
 After the confirmation, we will sign your OpenPGP key and send it to you. We will
 not upload it to any keyservers.

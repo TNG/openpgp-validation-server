@@ -21,7 +21,7 @@ type MailInfo struct {
 }
 
 // HandleMail returns zero or more outgoing mails in response to an incoming mail.
-func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.GetSetDeleter) (responses []mail.OutgoingMail) {
+func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.GetSetDeleter, host string) (responses []mail.OutgoingMail) {
 	responses = []mail.OutgoingMail{}
 
 	parser := mail.Parser{Gpg: gpgUtil}
@@ -49,7 +49,7 @@ func HandleMail(incomingMail io.Reader, gpgUtil mail.GpgUtility, store storage.G
 			return
 		}
 		nonceString := hex.EncodeToString(nonce[:])
-		message := request.getNonceMessage(nonceString, requestKey.PrimaryKey.KeyIdString())
+		message := request.getNonceMessage(nonceString, requestKey.PrimaryKey.KeyIdString(), host)
 
 		log.Printf("Sending nonce mail to %s with nonce %s\n", identity.UserId.Email, nonceString)
 
@@ -88,12 +88,13 @@ func (info *MailInfo) getSender() string {
 	return info.entity.GetSender()
 }
 
-func (info *MailInfo) getNonceMessage(nonceString, fingerprint string) string {
+func (info *MailInfo) getNonceMessage(nonceString, fingerprint, httpHost string) string {
 	message := new(bytes.Buffer)
-	err := requestResponseMessage.Execute(message, struct{ Nonce, Requester, Fingerprint string }{
+	err := requestResponseMessage.Execute(message, struct{ Nonce, Requester, Fingerprint, Host string }{
 		Nonce:       nonceString,
 		Requester:   info.getSender(),
 		Fingerprint: fingerprint,
+		Host:        httpHost,
 	})
 	if err != nil {
 		log.Panicf("Cannot generate nonce message: %v\n", err)

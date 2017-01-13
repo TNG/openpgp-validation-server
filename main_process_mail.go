@@ -13,33 +13,33 @@ import (
 	"github.com/TNG/openpgp-validation-server/validator"
 )
 
-func serveSMTPRequestReceiver(host string) {
-	smtpServer := smtp.NewServer(host, getIncomingMailEnvelopeHandler())
+func serveSMTPRequestReceiver(host, httpHost string) {
+	smtpServer := smtp.NewServer(host, getIncomingMailEnvelopeHandler(httpHost))
 	smtpServer.Run()
 }
 
-func getIncomingMailEnvelopeHandler() func(*smtp.MailEnvelope) {
+func getIncomingMailEnvelopeHandler(httpHost string) func(*smtp.MailEnvelope) {
 	return func(incomingMail *smtp.MailEnvelope) {
-		handleIncomingMailEnvelope(incomingMail)
+		handleIncomingMailEnvelope(incomingMail, httpHost)
 	}
 }
 
-func getIncomingMailHandler() func(io.Reader) {
+func getIncomingMailHandler(httpHost string) func(io.Reader) {
 	return func(incomingMail io.Reader) {
-		handleIncomingMail(incomingMail)
+		handleIncomingMail(incomingMail, httpHost)
 	}
 }
 
-func handleIncomingMailEnvelope(incomingMail *smtp.MailEnvelope) {
-	handleIncomingMail(bytes.NewReader(incomingMail.Content))
+func handleIncomingMailEnvelope(incomingMail *smtp.MailEnvelope, httpHost string) {
+	handleIncomingMail(bytes.NewReader(incomingMail.Content), httpHost)
 }
 
-func handleIncomingMail(incomingMail io.Reader) {
+func handleIncomingMail(incomingMail io.Reader, httpHost string) {
 	if gpgUtil == nil {
 		log.Panicf("Missing gpg init!")
 	}
 
-	for _, responseMail := range validator.HandleMail(incomingMail, gpgUtil, store) {
+	for _, responseMail := range validator.HandleMail(incomingMail, gpgUtil, store, httpHost) {
 		sendOutgoingMail("nonce", &responseMail)
 	}
 }

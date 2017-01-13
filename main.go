@@ -78,12 +78,20 @@ func initGlobalServices(c *cli.Context) error {
 	return nil
 }
 
-func runServers(c *cli.Context) {
+func getHTTPHost(c *cli.Context) string {
 	httpHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("http-port"))
+	if c.Int("http-port") == 80 {
+		httpHost = c.String("host")
+	}
+	return httpHost
+}
+
+func runServers(c *cli.Context) {
+	httpHost := getHTTPHost(c)
 	smtpInHost := fmt.Sprintf("%v:%v", c.String("host"), c.Int("smtp-in-port"))
 
 	log.Println("Setting up SMTP server listening at: ", smtpInHost)
-	go serveSMTPRequestReceiver(smtpInHost)
+	go serveSMTPRequestReceiver(smtpInHost, httpHost)
 
 	log.Println("Setting up HTTP server listening at: ", httpHost)
 	log.Panic(serveNonceConfirmer(httpHost))
@@ -110,7 +118,8 @@ func processMailAction(c *cli.Context) error {
 		return err
 	}
 
-	processMail := getIncomingMailHandler()
+	httpHost := getHTTPHost(c)
+	processMail := getIncomingMailHandler(httpHost)
 	processMail(inputMail)
 
 	return nil

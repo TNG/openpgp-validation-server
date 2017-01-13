@@ -34,7 +34,7 @@ func (m OutgoingMail) From() string {
 func (m OutgoingMail) Bytes() ([]byte, error) {
 	w := bytes.Buffer{}
 	now := time.Now()
-	identityParts := strings.Split(m.GPG.ServerIdentity(), "><@")
+	identityParts := strings.FieldsFunc(m.GPG.ServerIdentity(), func(r rune) bool { return strings.ContainsRune("><@", r) })
 	serverDomain := identityParts[len(identityParts)-1]
 	empw := NewEncodingMultipartWriter(&w, "encrypted", "application/pgp-encrypted", map[string]string{
 		"Date":                now.Format(time.RFC1123Z),

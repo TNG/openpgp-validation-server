@@ -238,7 +238,7 @@ func RunApp(args []string) {
 			cli.StringFlag{
 				Name:  "external-http-host",
 				Value: "localhost:8080",
-				Usage: "External HTTP host for the nonce validation",
+				Usage: "External HTTP host for the nonce validation (link in the email)",
 			},
 			cli.IntFlag{
 				Name:  "smtp-in-port",

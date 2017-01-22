@@ -42,7 +42,10 @@ func (s *fileStore) getData(nonce [nonceLength]byte, suffix string) []byte {
 		log.Println(err)
 		return nil
 	}
-	_ = f.Close()
+	err = f.Close()
+	if err != nil {
+		log.Println(err)
+	}
 	return data
 }
 

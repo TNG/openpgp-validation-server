@@ -6,8 +6,29 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/openpgp"
 )
+
+func TestMarshalUnmarshalKey(t *testing.T) {
+	file, err := os.Open(asciiKeyFileSecret)
+	assert.NoError(t, err)
+
+	k1, err := readKey(file)
+	assert.NoError(t, err)
+
+	data, err := MarshalKey(k1)
+	assert.NoError(t, err)
+
+	k2, err := UnmarshalKey(data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, k1.PrimaryKey.Fingerprint, k2.PrimaryKey.Fingerprint)
+
+	// Only public key is encoded
+	assert.NotNil(t, k1.PrivateKey)
+	assert.Nil(t, k2.PrivateKey)
+}
 
 func readEntityTest(t *testing.T, path string, armored bool, expectedKeys [2]bool, expectedIdentity string) {
 	keyFile, err := os.Open(path)

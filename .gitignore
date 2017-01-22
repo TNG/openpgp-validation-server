@@ -28,3 +28,7 @@ openpgp-validation-server
 .idea/
 
 coverage.txt
+
+nonce_*
+signature_*
+requests/

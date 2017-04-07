@@ -42,7 +42,7 @@ func (entity *MimeEntity) getHeader(name, defaultValue string) string {
 	dec := new(mime.WordDecoder)
 	decoded, err := dec.DecodeHeader(values[0])
 	if err != nil {
-		fmt.Println("Error doing WordDecode on Header %v: %v", name, err)
+		fmt.Printf("Error doing WordDecode on Header %v: %v", name, err)
 		return values[0]
 	}
 	return decoded

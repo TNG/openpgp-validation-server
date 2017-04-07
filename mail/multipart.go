@@ -116,34 +116,35 @@ func (w *EncodingMultipartWriter) WriteAttachedFile(name, mimeType, description 
 }
 
 // WritePlainText writes the given text as a text/plain segment
-func (w *EncodingMultipartWriter) WritePlainText(text string) error {
-	err := w.checkWriteHeaders()
+func (w *EncodingMultipartWriter) WritePlainText(text string) (err error) {
+	err = w.checkWriteHeaders()
 	if err != nil {
 		return err
 	}
-	if isPrintableASCIIString(text) {
-		partWriter, err := w.multipartWriter.CreatePart(textproto.MIMEHeader{
+	var header textproto.MIMEHeader
+	printable := isPrintableASCIIString(text)
+	if printable {
+		header = textproto.MIMEHeader{
 			"Content-Type": {"text/plain"},
-		})
-		if err != nil {
-			return err
 		}
-		_, err = partWriter.Write([]byte(text))
-		return err
+	} else {
+		header = textproto.MIMEHeader{
+			"Content-Type":              {"text/plain; charset=utf-8"},
+			"Content-Transfer-Encoding": {"quoted-printable"},
+		}
 	}
-	partWriter, err := w.multipartWriter.CreatePart(textproto.MIMEHeader{
-		"Content-Type":              {"text/plain; charset=utf-8"},
-		"Content-Transfer-Encoding": {"quoted-printable"},
-	})
+	textWriter, err := w.multipartWriter.CreatePart(header)
 	if err != nil {
 		return err
 	}
-	qpWriter := quotedprintable.NewWriter(partWriter)
-	_, err = qpWriter.Write([]byte(text))
-	if err != nil {
-		return err
+	if !printable {
+		textWriter := quotedprintable.NewWriter(textWriter)
+		defer func() {
+			err = textWriter.Close()
+		}()
 	}
-	return qpWriter.Close()
+	_, err = textWriter.Write([]byte(text))
+	return err
 }
 
 // Close writes the trailing information for an multipartWriter

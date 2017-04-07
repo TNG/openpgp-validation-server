@@ -1,9 +1,10 @@
 package mail
 
 import (
-	"errors"
 	"io"
+	"mime"
 	"mime/multipart"
+	"mime/quotedprintable"
 	"net/textproto"
 	"unicode"
 )
@@ -62,10 +63,10 @@ func (w *EncodingMultipartWriter) checkWriteHeaders() error {
 	}
 	w.headersWritten = true
 	for key, value := range w.headers {
-		header := key + ": " + value + newline
-		if !isPrintableASCIIString(header) {
-			return errors.New("Non-printable or non-ASCII characters in Header: " + header)
+		if !isPrintableASCIIString(value) {
+			value = mime.QEncoding.Encode("utf-8", value)
 		}
+		header := key + ": " + value + newline
 		_, err := w.out.Write([]byte(header))
 		if err != nil {
 			return err
@@ -120,17 +121,29 @@ func (w *EncodingMultipartWriter) WritePlainText(text string) error {
 	if err != nil {
 		return err
 	}
+	if isPrintableASCIIString(text) {
+		partWriter, err := w.multipartWriter.CreatePart(textproto.MIMEHeader{
+			"Content-Type": {"text/plain"},
+		})
+		if err != nil {
+			return err
+		}
+		_, err = partWriter.Write([]byte(text))
+		return err
+	}
 	partWriter, err := w.multipartWriter.CreatePart(textproto.MIMEHeader{
-		"Content-Type": {"text/plain"},
+		"Content-Type":              {"text/plain; charset=utf-8"},
+		"Content-Transfer-Encoding": {"quoted-printable"},
 	})
 	if err != nil {
 		return err
 	}
-	if !isPrintableASCIIString(text) {
-		return errors.New("Non-printable or non-ASCII characters in Text: " + text)
+	qpWriter := quotedprintable.NewWriter(partWriter)
+	_, err = qpWriter.Write([]byte(text))
+	if err != nil {
+		return err
 	}
-	_, err = partWriter.Write([]byte(text))
-	return err
+	return qpWriter.Close()
 }
 
 // Close writes the trailing information for an multipartWriter

@@ -39,7 +39,13 @@ func (entity *MimeEntity) getHeader(name, defaultValue string) string {
 	if !ok || len(values) == 0 {
 		return defaultValue
 	}
-	return values[0]
+	dec := new(mime.WordDecoder)
+	decoded, err := dec.DecodeHeader(values[0])
+	if err != nil {
+		fmt.Println("Error doing WordDecode on Header %v: %v", name, err)
+		return values[0]
+	}
+	return decoded
 }
 
 // GetSubject returns the value of the "Subject" header.

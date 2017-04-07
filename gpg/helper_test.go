@@ -139,5 +139,16 @@ func TestSignClientPublicKey(t *testing.T) {
 		t.Error("No new signatures found")
 	}
 
+	sig := signedClientEntity.Identities[signedIdentity].Signatures[newSigCount-1]
+	if sig.PolicyUri != "https://github.com/TNG/openpgp-validation-server" {
+		t.Error("Wrong Policy URI:", sig.PolicyUri)
+	}
+
+	expectedNotation := "{\"validation\":{\"validations\":[{\"date\":\"NOW\",\"approach\":\"enc-email-click\",\"email\":\"foo\"}]}}"
+	actutalNotation := sig.NotationData["validation@openpgp-email.org"]
+	if actutalNotation != expectedNotation {
+		t.Error("Wrong Notation Data:", actutalNotation, expectedNotation)
+	}
+
 	verifySignatureTest(t, signedIdentity, signedClientEntity)
 }

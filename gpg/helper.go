@@ -2,6 +2,7 @@ package gpg
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,20 @@ import (
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
 )
+
+type validationInfo struct {
+	Date     string `json:"date"`
+	Approach string `json:"approach"`
+	Email    string `json:"email"`
+}
+
+type validationInfoList struct {
+	Validations []validationInfo `json:"validations"`
+}
+
+type validationInfoNotationData struct {
+	Validation validationInfoList `json:"validation"`
+}
 
 // Key is a reference to an OpenPGP entity containing some public keys
 type Key *openpgp.Entity
@@ -120,6 +135,23 @@ func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Con
 	}
 
 	lifetime := uint32((3600 * 24 * 365) / 2)
+	notationData := validationInfoNotationData{
+		Validation: validationInfoList{
+			Validations: []validationInfo{
+				validationInfo{
+					Email:    "foo",
+					Date:     "NOW",
+					Approach: "enc-email-click",
+				},
+			},
+		},
+	}
+
+	notationDataBytes, err := json.Marshal(notationData)
+	if err != nil {
+		return err
+	}
+
 	sig := &packet.Signature{
 		SigType:         packet.SigTypeGenericCert,
 		PubKeyAlgo:      signer.PrivateKey.PubKeyAlgo,
@@ -127,6 +159,8 @@ func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Con
 		CreationTime:    config.Now(),
 		IssuerKeyId:     &signer.PrivateKey.KeyId,
 		SigLifetimeSecs: &lifetime,
+		PolicyUri:       "https://github.com/TNG/openpgp-validation-server",
+		NotationData:    map[string]string{"validation@openpgp-email.org": string(notationDataBytes)},
 	}
 	if err := sig.SignUserId(identity, e.PrimaryKey, signer.PrivateKey, config); err != nil {
 		return err

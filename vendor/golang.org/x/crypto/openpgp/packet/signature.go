@@ -76,6 +76,12 @@ type Signature struct {
 	// subkey as their own.
 	EmbeddedSignature *Signature
 
+	// PolicyUri is set if the Signer specifies a Policy document
+	PolicyUri string
+
+	// NotationData, if non-nil, is a mapping from Notation names to Notation values
+	NotationData map[string]string
+
 	outSubpackets []outputSubpacket
 }
 
@@ -198,9 +204,11 @@ const (
 	keyExpirationSubpacket       signatureSubpacketType = 9
 	prefSymmetricAlgosSubpacket  signatureSubpacketType = 11
 	issuerSubpacket              signatureSubpacketType = 16
+	notationDataSubpacket        signatureSubpacketType = 20
 	prefHashAlgosSubpacket       signatureSubpacketType = 21
 	prefCompressionSubpacket     signatureSubpacketType = 22
 	primaryUserIdSubpacket       signatureSubpacketType = 25
+	policyUriSubpacket           signatureSubpacketType = 26
 	keyFlagsSubpacket            signatureSubpacketType = 27
 	reasonForRevocationSubpacket signatureSubpacketType = 29
 	featuresSubpacket            signatureSubpacketType = 30
@@ -297,6 +305,31 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 		sig.IssuerKeyId = new(uint64)
 		*sig.IssuerKeyId = binary.BigEndian.Uint64(subpacket)
+	case notationDataSubpacket:
+		// Arbitrary signature notation data, section 5.2.3.16
+		if !isHashed {
+			return
+		}
+		if len(subpacket) < 8 {
+			err = errors.StructuralError("notation data subpacket below minimum length")
+			return
+		}
+		if subpacket[0] != 0x80 || subpacket[1] != 0x00 || subpacket[2] != 0x00 || subpacket[3] != 0x00 {
+			err = errors.StructuralError("notation data subpacket with unexpected flags")
+			return
+		}
+		nameLength := binary.BigEndian.Uint16(subpacket[4:6])
+		valueLength := binary.BigEndian.Uint16(subpacket[6:8])
+		if len(subpacket) != int(8+nameLength+valueLength) {
+			err = errors.StructuralError("notation data subpacket with bad length data")
+			return
+		}
+		if sig.NotationData == nil {
+			sig.NotationData = make(map[string]string)
+		}
+		name := string(subpacket[8 : 8+nameLength])
+		value := string(subpacket[8+nameLength : 8+nameLength+valueLength])
+		sig.NotationData[name] = value
 	case prefHashAlgosSubpacket:
 		// Preferred hash algorithms, section 5.2.3.8
 		if !isHashed {
@@ -324,6 +357,12 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		if subpacket[0] > 0 {
 			*sig.IsPrimaryId = true
 		}
+	case policyUriSubpacket:
+		// Policy URI, section 5.2.3.20
+		if !isHashed {
+			return
+		}
+		sig.PolicyUri = string(subpacket)
 	case keyFlagsSubpacket:
 		// Key flags, section 5.2.3.21
 		if !isHashed {
@@ -727,5 +766,20 @@ func (sig *Signature) buildSubpackets() (subpackets []outputSubpacket) {
 		subpackets = append(subpackets, outputSubpacket{true, prefCompressionSubpacket, false, sig.PreferredCompression})
 	}
 
+	if sig.PolicyUri != "" {
+		subpackets = append(subpackets, outputSubpacket{true, policyUriSubpacket, false, []byte(sig.PolicyUri)})
+	}
+
+	if sig.NotationData != nil {
+		for notationName, notationValue := range sig.NotationData {
+			notationData := make([]byte, 8)
+			notationData[0] = 0x80
+			binary.BigEndian.PutUint16(notationData[4:6], uint16(len(notationName)))
+			binary.BigEndian.PutUint16(notationData[6:8], uint16(len(notationValue)))
+			notationData = append(notationData, []byte(notationName)...)
+			notationData = append(notationData, []byte(notationValue)...)
+			subpackets = append(subpackets, outputSubpacket{true, notationDataSubpacket, false, notationData})
+		}
+	}
 	return
 }

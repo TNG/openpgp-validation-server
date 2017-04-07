@@ -77,20 +77,20 @@ type Parser struct {
 func (parser *Parser) ParseMail(mailReader io.Reader) (*MimeEntity, error) {
 	mailInput, err := ioutil.ReadAll(mailReader)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot read mail input: %s", err)
+		return nil, fmt.Errorf("cannot read mail input: %s", err)
 	}
 	mailInput = parser.normalizeNewLines(mailInput)
 
 	message, err := mail.ReadMessage(bytes.NewReader(mailInput))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse mail input: %s", err)
+		return nil, fmt.Errorf("cannot parse mail input: %s", err)
 	}
 	entity, err := parser.parseEntity(textproto.MIMEHeader(message.Header), message.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse entity: %s", err)
+		return nil, fmt.Errorf("cannot parse entity: %s", err)
 	}
 	if entity == nil {
-		return nil, errors.New("Cannot parse entity, mail format not supported.")
+		return nil, errors.New("cannot parse entity, mail format not supported")
 	}
 	return entity, nil
 }
@@ -158,7 +158,7 @@ func (parser *Parser) parseMultipart(contentType MimeMediaType, header textproto
 	// TODO #9 Error handling.
 	boundary, ok := contentType.Params["boundary"]
 	if !ok {
-		return nil, fmt.Errorf("Multipart mail with type %s has no boundary specified.", contentType.Value)
+		return nil, fmt.Errorf("multipart mail with type %s has no boundary specified", contentType.Value)
 	}
 	result := MimeEntity{
 		Header:       header,
@@ -228,7 +228,7 @@ func (parser *Parser) parseMultipartSignedWithError(contentType MimeMediaType, h
 
 	_, ok := contentType.Params["micalg"] // TODO #9 How to validate mic algorithm?
 	if !ok {
-		return nil, nil, errors.New("Multipart/signed mail must specify micalg parameter.")
+		return nil, nil, errors.New("multipart/signed mail must specify micalg parameter")
 	}
 
 	buffer := new(bytes.Buffer)
@@ -239,12 +239,12 @@ func (parser *Parser) parseMultipartSignedWithError(contentType MimeMediaType, h
 	}
 
 	if len(result.Parts) != 2 {
-		return result, nil, fmt.Errorf("Multipart/signed body must contain two parts, but got %d.", len(result.Parts))
+		return result, nil, fmt.Errorf("multipart/signed body must contain two parts, but got %d", len(result.Parts))
 	}
 
 	boundary, ok := contentType.Params["boundary"]
 	if !ok {
-		panic("Unreachable, because missing boundary parameter has to be checked before.")
+		panic("Unreachable, because missing boundary parameter has to be checked before")
 	}
 
 	signedPart := parser.findSignedPart(buffer.Bytes(), boundary)
@@ -286,12 +286,12 @@ func (parser *Parser) parseMultipartSignerKey(multipart *MimeEntity) (gpg.Key, e
 func (parser *Parser) parseMultipartSignature(multipart *MimeEntity) ([]byte, error) {
 	signatureContentType := getMimeMediaType(multipart.Parts[1].Header, "Content-Type")
 	if signatureContentType.Value != "application/pgp-signature" {
-		return nil, fmt.Errorf("Invalid signature content-type '%s'.", signatureContentType)
+		return nil, fmt.Errorf("invalid signature content-type '%s'", signatureContentType)
 	}
 
 	signature, err := multipart.FindAttachment("application/pgp-signature")
 	if err != nil {
-		return nil, fmt.Errorf("Cannot find attachment: %s", err)
+		return nil, fmt.Errorf("cannot find attachment: %s", err)
 	}
 
 	return signature, err
@@ -323,7 +323,7 @@ func (parser *Parser) createAttachment(contentDisposition MimeMediaType, header 
 	body io.Reader) (*MimeEntity, error) {
 	data, err := ioutil.ReadAll(body)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot read body: %s", err)
+		return nil, fmt.Errorf("cannot read body: %s", err)
 	}
 	return &MimeEntity{
 		Header:       header,
@@ -337,7 +337,7 @@ func (parser *Parser) createAttachment(contentDisposition MimeMediaType, header 
 func (entity *MimeEntity) FindAttachment(mimeType string) ([]byte, error) {
 	attachment := entity.findAttachmentOrNil(mimeType)
 	if attachment == nil {
-		return nil, fmt.Errorf("No attachment of type \"%s\".", mimeType)
+		return nil, fmt.Errorf("no attachment of type \"%s\"", mimeType)
 	}
 	return attachment, nil
 }
@@ -368,23 +368,23 @@ func (parser *Parser) parseMultipartEncrypted(contentType MimeMediaType, header 
 	}
 	decryptedMessage, err := parser.parseMultipartEncryptedWithError(contentType, header, bytes.NewReader(bodyBytes), nil)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decrypt message: %s", err)
+		return nil, fmt.Errorf("could not decrypt message: %s", err)
 	}
 	message, err := mail.ReadMessage(bytes.NewReader(decryptedMessage))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse mail input: %s", err)
+		return nil, fmt.Errorf("cannot parse mail input: %s", err)
 	}
 	entity, err := parser.parseEntity(textproto.MIMEHeader(message.Header), message.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse entity: %s", err)
+		return nil, fmt.Errorf("cannot parse entity: %s", err)
 	}
 	signerKey, err := parser.parseMultipartSignerKey(entity)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse signer key: %s", err)
+		return nil, fmt.Errorf("cannot parse signer key: %s", err)
 	}
 	_, err = parser.parseMultipartEncryptedWithError(contentType, header, bytes.NewReader(bodyBytes), signerKey)
 	if err != nil {
-		return nil, fmt.Errorf("Could not verify message: %s", err)
+		return nil, fmt.Errorf("could not verify message: %s", err)
 	}
 	entity.SignedBy = signerKey
 	return entity, nil
@@ -395,28 +395,28 @@ func (parser *Parser) parseMultipartEncryptedWithError(contentType MimeMediaType
 	body io.Reader, signerKey gpg.Key) ([]byte, error) {
 
 	if contentType.Params["protocol"] != "application/pgp-encrypted" {
-		return nil, errors.New("Multipart/encrypted mail protocol must be application/pgp-encrypted.")
+		return nil, errors.New("multipart/encrypted mail protocol must be application/pgp-encrypted")
 	}
 
 	result, err := parser.parseMultipart(contentType, header, body)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse multipart: %s", err)
+		return nil, fmt.Errorf("cannot parse multipart: %s", err)
 	}
 
 	if len(result.Parts) != 2 {
-		return nil, fmt.Errorf("Multipart/encrypted body must contain two parts, but got %d.", len(result.Parts))
+		return nil, fmt.Errorf("multipart/encrypted body must contain two parts, but got %d", len(result.Parts))
 	}
 
-	if result.Parts[0].getHeader("Content-Type", "") != "application/pgp-encrypted" {
-		return nil, errors.New("Content-Type of first multipart/encrypted part must be application/pgp-encrypted.")
+	if result.Parts[0].getHeader("content-Type", "") != "application/pgp-encrypted" {
+		return nil, errors.New("content-Type of first multipart/encrypted part must be application/pgp-encrypted")
 	}
 
 	if strings.TrimSpace(string(result.Parts[0].Content)) != "Version: 1" {
-		return nil, errors.New("Content of first multipart/encrypted part must be 'Version 1'")
+		return nil, errors.New("content of first multipart/encrypted part must be 'Version 1'")
 	}
 
 	if !result.Parts[1].IsAttachment {
-		return nil, errors.New("Content of second multipart/encrypted part must be an attachment")
+		return nil, errors.New("content of second multipart/encrypted part must be an attachment")
 	}
 
 	v := []byte(strings.TrimSpace(string(result.Parts[1].Content)))
@@ -429,12 +429,12 @@ func (parser *Parser) parseMultipartEncryptedWithError(contentType MimeMediaType
 func (parser *Parser) onlyDecryptMessage(crypted []byte) ([]byte, error) {
 	decryptedReader, err := parser.Gpg.DecryptMessage(bytes.NewReader(crypted))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot decrypt message: %s", err)
+		return nil, fmt.Errorf("cannot decrypt message: %s", err)
 	}
 
 	message, err := ioutil.ReadAll(decryptedReader)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot read decrypted message: %s", err)
+		return nil, fmt.Errorf("cannot read decrypted message: %s", err)
 	}
 
 	return message, nil

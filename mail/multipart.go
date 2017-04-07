@@ -25,7 +25,7 @@ func isPrintableASCIIString(s string) bool {
 			return false
 		}
 		if !unicode.IsPrint(c) && c != '\n' && c != '\r' {
-
+			return false
 		}
 	}
 	return true

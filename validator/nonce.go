@@ -49,16 +49,16 @@ func NonceFromString(nonceString string) (nonce [NonceLength]byte, err error) {
 // ConfirmNonce checks the given nonce, and if there is associated information, sends an email with the signed key
 func ConfirmNonce(nonce [NonceLength]byte, store storage.GetSetDeleter, gpgUtil *gpg.GPG) (*mail.OutgoingMail, error) {
 	if gpgUtil == nil {
-		return nil, fmt.Errorf("Skipping nonce confirmation, as gpgUtil is not available.")
+		return nil, fmt.Errorf("skipping nonce confirmation, as gpgUtil is not available")
 	}
 
 	if store == nil {
-		return nil, fmt.Errorf("Skipping nonce confirmation, as store is not available.")
+		return nil, fmt.Errorf("skipping nonce confirmation, as store is not available")
 	}
 	requestInfo := store.Get(nonce)
 
 	if requestInfo == nil {
-		return nil, fmt.Errorf("Cannot confirm nonce, %v not found.", hex.EncodeToString(nonce[:]))
+		return nil, fmt.Errorf("cannot confirm nonce, %v not found", hex.EncodeToString(nonce[:]))
 	}
 
 	log.Printf("Signing key %v of '%v'.", requestInfo.Key.PrimaryKey.KeyIdString(), requestInfo.Email)
@@ -87,7 +87,7 @@ func getSignedKeyMessage(fingerprint string) string {
 		Fingerprint: fingerprint,
 	})
 	if err != nil {
-		log.Panicf("Cannot generate signed-key message: %v\n", err)
+		log.Panicf("cannot generate signed-key message: %v", err)
 		return ""
 	}
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/openpgp"
@@ -140,11 +141,11 @@ func TestSignClientPublicKey(t *testing.T) {
 	}
 
 	sig := signedClientEntity.Identities[signedIdentity].Signatures[newSigCount-1]
-	if sig.PolicyUri != "https://github.com/TNG/openpgp-validation-server" {
+	if sig.PolicyUri != "https://github.com/TNG/openpgp-validation-server/blob/d2d11e4d69fa3d050b6bfb48788d8e67d28e7bf4/POLICY-enc-email-click-draft.md" {
 		t.Error("Wrong Policy URI:", sig.PolicyUri)
 	}
 
-	expectedNotation := "{\"validation\":{\"validations\":[{\"date\":\"NOW\",\"approach\":\"enc-email-click\",\"email\":\"foo\"}]}}"
+	expectedNotation := "{\"validation\":{\"validations\":[{\"date\":\"" + time.Now().Format("2006-01-02") + "\",\"approach\":\"enc-email-click\",\"email\":\"test-gpg-validation@client.local\"}]}}"
 	actutalNotation := sig.NotationData["validation@openpgp-email.org"]
 	if actutalNotation != expectedNotation {
 		t.Error("Wrong Notation Data:", actutalNotation, expectedNotation)

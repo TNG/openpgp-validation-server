@@ -115,8 +115,8 @@ func signClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, se
 		return errors.New(fmt.Sprint("Client does not have identity:", signedIdentity))
 	}
 	approach := "enc-email-click"
-	policyUri := "https://github.com/TNG/openpgp-validation-server/blob/d2d11e4d69fa3d050b6bfb48788d8e67d28e7bf4/POLICY-enc-email-click-draft.md"
-	err := signIdentity(signedIdentity, clientEntity, serverEntity, nil, policyUri, approach)
+	policyURI := "https://github.com/TNG/openpgp-validation-server/blob/d2d11e4d69fa3d050b6bfb48788d8e67d28e7bf4/POLICY-enc-email-click-draft.md"
+	err := signIdentity(signedIdentity, clientEntity, serverEntity, nil, policyURI, approach)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func signClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, se
 	return err
 }
 
-func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Config, policyUri, approach string) error {
+func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Config, policyURI, approach string) error {
 	if signer.PrivateKey == nil {
 		return errors.New("signing Entity must have a private key")
 	}
@@ -161,7 +161,7 @@ func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Con
 		CreationTime:    config.Now(),
 		IssuerKeyId:     &signer.PrivateKey.KeyId,
 		SigLifetimeSecs: &lifetime,
-		PolicyUri:       policyUri,
+		PolicyUri:       policyURI,
 		NotationData:    map[string]string{"validation@openpgp-email.org": string(notationDataBytes)},
 	}
 	if err := sig.SignUserId(identity, e.PrimaryKey, signer.PrivateKey, config); err != nil {

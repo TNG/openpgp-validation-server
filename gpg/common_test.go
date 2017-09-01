@@ -38,6 +38,6 @@ func verifySignatureTest(t *testing.T, signedIdentity string, signedClientEntity
 			t.Error("Signature", index, "not valid:", err)
 		}
 
-		assert.Equal(t, uint32(15768000), *signature.SigLifetimeSecs, "Invalid signature expiry")
+		assert.Equal(t, uint32(34214400), *signature.SigLifetimeSecs, "Invalid signature expiry")
 	}
 }

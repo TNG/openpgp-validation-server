@@ -32,3 +32,5 @@ coverage.txt
 nonce_*.eml
 signature_*.eml
 requests/
+messages/
+cmd/acquire/acquire

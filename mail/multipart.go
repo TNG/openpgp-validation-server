@@ -49,10 +49,8 @@ func NewEncodingMultipartWriter(w io.Writer, multitype, protocol string, extraHe
 		"Content-Type":              contentType,
 		"Content-Transfer-Encoding": "7bit",
 	}
-	if extraHeaders != nil {
-		for key, value := range extraHeaders {
-			headers[key] = value
-		}
+	for key, value := range extraHeaders {
+		headers[key] = value
 	}
 	return &EncodingMultipartWriter{w, headers, false, multipartWriter}
 }

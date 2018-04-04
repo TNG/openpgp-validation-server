@@ -9,3 +9,6 @@ https://wiki.gnupg.org/OpenPGPEmailSummit201607/EmailValidation
 ## Contributing
 Reference for Go review comments:
 https://github.com/golang/go/wiki/CodeReviewComments
+
+## Signature notation currently blocked by
+https://go-review.googlesource.com/60990

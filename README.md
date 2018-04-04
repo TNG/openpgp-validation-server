@@ -1,5 +1,5 @@
 # OpenPGP Key Validation Server
-[![Build Status](https://travis-ci.org/TNG/openpgp-validation-server.svg?branch=master)](https://travis-ci.org/TNG/openpgp-validation-server) [![codecov.io](https://codecov.io/github/TNG/openpgp-validation-server/coverage.svg?branch=master)](https://codecov.io/github/TNG/openpgp-validation-server?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/TNG/openpgp-validation-server)](https://goreportcard.com/report/github.com/TNG/openpgp-validation-server) [![GoDoc](https://godoc.org/github.com/TNG/openpgp-validation-server?status.svg)](https://godoc.org/github.com/TNG/openpgp-validation-server)
+[![Build Status](https://travis-ci.org/TNG/openpgp-validation-server.svg?branch=master)](https://travis-ci.org/TNG/openpgp-validation-server) [![Go Report Card](https://goreportcard.com/badge/github.com/TNG/openpgp-validation-server)](https://goreportcard.com/report/github.com/TNG/openpgp-validation-server) [![GoDoc](https://godoc.org/github.com/TNG/openpgp-validation-server?status.svg)](https://godoc.org/github.com/TNG/openpgp-validation-server)
 
 OpenPGP Email Validation in Go - Experimental Server
 

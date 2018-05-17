@@ -161,7 +161,7 @@ func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Con
 		CreationTime:    config.Now(),
 		IssuerKeyId:     &signer.PrivateKey.KeyId,
 		SigLifetimeSecs: &lifetime,
-		PolicyUri:       policyURI,
+		PolicyURI:       policyURI,
 		NotationData:    map[string]string{"validation@openpgp-email.org": string(notationDataBytes)},
 	}
 	if err := sig.SignUserId(identity, e.PrimaryKey, signer.PrivateKey, config); err != nil {

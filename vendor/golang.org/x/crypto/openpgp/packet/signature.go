@@ -76,8 +76,8 @@ type Signature struct {
 	// subkey as their own.
 	EmbeddedSignature *Signature
 
-	// PolicyUri is set if the Signer specifies a Policy document
-	PolicyUri string
+	// PolicyURI is set if the Signer specifies a Policy document
+	PolicyURI string
 
 	// NotationData, if non-nil, is a mapping from Notation names to Notation values
 	NotationData map[string]string
@@ -208,7 +208,7 @@ const (
 	prefHashAlgosSubpacket       signatureSubpacketType = 21
 	prefCompressionSubpacket     signatureSubpacketType = 22
 	primaryUserIdSubpacket       signatureSubpacketType = 25
-	policyUriSubpacket           signatureSubpacketType = 26
+	policyURISubpacket           signatureSubpacketType = 26
 	keyFlagsSubpacket            signatureSubpacketType = 27
 	reasonForRevocationSubpacket signatureSubpacketType = 29
 	featuresSubpacket            signatureSubpacketType = 30
@@ -357,12 +357,12 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		if subpacket[0] > 0 {
 			*sig.IsPrimaryId = true
 		}
-	case policyUriSubpacket:
+	case policyURISubpacket:
 		// Policy URI, section 5.2.3.20
 		if !isHashed {
 			return
 		}
-		sig.PolicyUri = string(subpacket)
+		sig.PolicyURI = string(subpacket)
 	case keyFlagsSubpacket:
 		// Key flags, section 5.2.3.21
 		if !isHashed {
@@ -766,8 +766,8 @@ func (sig *Signature) buildSubpackets() (subpackets []outputSubpacket) {
 		subpackets = append(subpackets, outputSubpacket{true, prefCompressionSubpacket, false, sig.PreferredCompression})
 	}
 
-	if sig.PolicyUri != "" {
-		subpackets = append(subpackets, outputSubpacket{true, policyUriSubpacket, false, []byte(sig.PolicyUri)})
+	if sig.PolicyURI != "" {
+		subpackets = append(subpackets, outputSubpacket{true, policyURISubpacket, false, []byte(sig.PolicyURI)})
 	}
 
 	if sig.NotationData != nil {

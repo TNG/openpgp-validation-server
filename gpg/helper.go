@@ -2,14 +2,30 @@ package gpg
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
 )
+
+type validationInfo struct {
+	Date     string `json:"date"`
+	Approach string `json:"approach"`
+	Email    string `json:"email"`
+}
+
+type validationInfoList struct {
+	Validations []validationInfo `json:"validations"`
+}
+
+type validationInfoNotationData struct {
+	Validation validationInfoList `json:"validation"`
+}
 
 // Key is a reference to an OpenPGP entity containing some public keys
 type Key *openpgp.Entity
@@ -98,8 +114,9 @@ func signClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, se
 	if !ok {
 		return errors.New(fmt.Sprint("Client does not have identity:", signedIdentity))
 	}
-
-	err := signIdentity(signedIdentity, clientEntity, serverEntity, nil)
+	approach := "enc-email-click"
+	policyURI := "https://github.com/TNG/openpgp-validation-server/blob/d2d11e4d69fa3d050b6bfb48788d8e67d28e7bf4/POLICY-enc-email-click-draft.md"
+	err := signIdentity(signedIdentity, clientEntity, serverEntity, nil, policyURI, approach)
 	if err != nil {
 		return err
 	}
@@ -107,7 +124,7 @@ func signClientPublicKey(clientEntity *openpgp.Entity, signedIdentity string, se
 	return err
 }
 
-func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Config) error {
+func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Config, policyURI, approach string) error {
 	if signer.PrivateKey == nil {
 		return errors.New("signing Entity must have a private key")
 	}
@@ -119,7 +136,24 @@ func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Con
 		return errors.New("given identity string not found in Entity")
 	}
 
-	lifetime := uint32((3600 * 24 * 365) / 2)
+	lifetime := uint32(3600 * 24 * 396) // 396 ~= 13 Months
+	notationData := validationInfoNotationData{
+		Validation: validationInfoList{
+			Validations: []validationInfo{
+				validationInfo{
+					Email:    ident.UserId.Email,
+					Date:     time.Now().Format("2006-01-02"),
+					Approach: approach,
+				},
+			},
+		},
+	}
+
+	notationDataBytes, err := json.Marshal(notationData)
+	if err != nil {
+		return err
+	}
+
 	sig := &packet.Signature{
 		SigType:         packet.SigTypeGenericCert,
 		PubKeyAlgo:      signer.PrivateKey.PubKeyAlgo,
@@ -127,6 +161,8 @@ func signIdentity(identity string, e, signer *openpgp.Entity, config *packet.Con
 		CreationTime:    config.Now(),
 		IssuerKeyId:     &signer.PrivateKey.KeyId,
 		SigLifetimeSecs: &lifetime,
+		PolicyURI:       policyURI,
+		NotationData:    map[string]string{"validation@openpgp-email.org": string(notationDataBytes)},
 	}
 	if err := sig.SignUserId(identity, e.PrimaryKey, signer.PrivateKey, config); err != nil {
 		return err

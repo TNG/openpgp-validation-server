@@ -2,4 +2,4 @@
 
 set +e
 
-gometalinter --deadline=480s ./... "$@"
+gometalinter -j2 --vendor --deadline=480s ./... "$@"

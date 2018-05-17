@@ -29,6 +29,8 @@ openpgp-validation-server
 
 coverage.txt
 
-nonce_*
-signature_*
+nonce_*.eml
+signature_*.eml
 requests/
+messages/
+cmd/acquire/acquire
